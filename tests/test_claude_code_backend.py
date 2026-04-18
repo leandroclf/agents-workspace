@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from unittest.mock import patch, MagicMock
-from core.claude_code_backend import ClaudeCodeBackend, ClaudeCodeError
+from core.claude_code_backend import ClaudeCodeBackend, ClaudeCodeError, BackendLimitError
 
 
 def _make_cli_response(text: str = "resposta mock", input_tokens: int = 10,
@@ -113,3 +113,34 @@ def test_prompt_sent_via_stdin(mock_run):
     backend.complete(prompt="meu prompt especial", model="haiku")
     call_kwargs = mock_run.call_args[1]
     assert call_kwargs.get("input") == "meu prompt especial"
+
+
+@patch("subprocess.run")
+def test_raises_backend_limit_error_on_hit_your_limit(mock_run):
+    limit_response = json.dumps({
+        "type": "result",
+        "subtype": "error",
+        "is_error": True,
+        "result": "You've hit your limit · resets 12pm",
+        "usage": {"input_tokens": 0, "output_tokens": 0},
+    })
+    mock_run.return_value = MagicMock(returncode=0, stdout=limit_response, stderr="")
+    backend = ClaudeCodeBackend()
+    with pytest.raises(BackendLimitError):
+        backend.complete(prompt="teste")
+
+
+@patch("subprocess.run")
+def test_raises_claude_code_error_on_other_is_error(mock_run):
+    error_response = json.dumps({
+        "type": "result",
+        "subtype": "error",
+        "is_error": True,
+        "result": "Some other error occurred",
+        "usage": {"input_tokens": 0, "output_tokens": 0},
+    })
+    mock_run.return_value = MagicMock(returncode=0, stdout=error_response, stderr="")
+    backend = ClaudeCodeBackend()
+    with pytest.raises(ClaudeCodeError) as exc_info:
+        backend.complete(prompt="teste")
+    assert not isinstance(exc_info.value, BackendLimitError)

@@ -19,6 +19,13 @@ class ClaudeCodeError(RuntimeError):
     """Erro ao chamar o Claude Code CLI."""
 
 
+class BackendLimitError(ClaudeCodeError):
+    """Rate limit ou quota esgotada — backend deve ser descartado por esta sessão."""
+    def __init__(self, message: str, resets_at: float | None = None):
+        super().__init__(message)
+        self.resets_at = resets_at
+
+
 class ClaudeCodeBackend:
     """
     Backend que usa o Claude Code CLI (`claude`) como executor.
@@ -77,7 +84,11 @@ class ClaudeCodeBackend:
             raise ClaudeCodeError(f"Resposta inválida do claude CLI: {e}\nOutput: {proc.stdout[:200]}")
 
         if data.get("is_error") or data.get("subtype") == "error":
-            raise ClaudeCodeError(f"Erro do claude CLI: {data.get('result', 'unknown error')}")
+            msg = data.get("result", "unknown error")
+            lower = msg.lower()
+            if "hit your limit" in lower or "resets" in lower:
+                raise BackendLimitError(f"Claude CLI limite atingido: {msg}")
+            raise ClaudeCodeError(f"Erro do claude CLI: {msg}")
 
         usage = data.get("usage", {})
         return {
