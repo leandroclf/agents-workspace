@@ -13,6 +13,25 @@ sys.path.insert(0, os.path.dirname(__file__))
 console = Console()
 
 
+def _make_client(memory=None):
+    """Cria ClaudeClient preferindo OAuth se disponível, fallback para API key."""
+    from core.claude_client import ClaudeClient
+    from core.memory_system import MemorySystem
+    from core.oauth_manager import OAuthManager
+
+    mem = memory or MemorySystem()
+    client_id = os.environ.get("ANTHROPIC_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("ANTHROPIC_CLIENT_SECRET", "").strip()
+
+    if client_id and client_id != "...":
+        oauth = OAuthManager(client_id=client_id, client_secret=client_secret)
+        token = oauth.get_valid_token()
+        if token:
+            return ClaudeClient(oauth_token=token, memory=mem)
+
+    return ClaudeClient(memory=mem)
+
+
 @click.group()
 def cli():
     """Workspace Inteligente com Claude 2026"""
@@ -29,7 +48,7 @@ def chat(prompt: str, task_type: str):
     from core.memory_system import MemorySystem
 
     memory = MemorySystem()
-    client = ClaudeClient(memory=memory)
+    client = _make_client(memory=memory)
     tt = TaskType[task_type.upper()] if task_type else None
 
     with console.status("[bold green]Processando..."):

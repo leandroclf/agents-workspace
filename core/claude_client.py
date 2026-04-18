@@ -32,9 +32,35 @@ ANALYSIS_KEYWORDS = ["analis", "avali", "compar", "expliq", "por que", "performa
                      "arquitetura", "design", "revi"]
 
 
+def _build_anthropic_client(api_key: Optional[str] = None,
+                             oauth_token: Optional[str] = None) -> anthropic.Anthropic:
+    """
+    Cria o cliente Anthropic priorizando OAuth (assinatura claude.ai) sobre API key.
+    OAuth usa Authorization: Bearer {token} — não gera cobrança por API key.
+    """
+    if oauth_token:
+        return anthropic.Anthropic(auth_token=oauth_token)
+    env_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+    if not env_key or env_key == "sk-ant-...":
+        raise ValueError(
+            "Nenhuma credencial configurada.\n"
+            "Opções:\n"
+            "  1. OAuth (assinatura): python3 authenticate.py\n"
+            "  2. API key: defina ANTHROPIC_API_KEY no .env"
+        )
+    return anthropic.Anthropic(api_key=env_key)
+
+
 class ClaudeClient:
-    def __init__(self, api_key: Optional[str] = None, memory: Optional[MemorySystem] = None):
-        self.client = anthropic.Anthropic(api_key=api_key or os.environ["ANTHROPIC_API_KEY"])
+    def __init__(self, api_key: Optional[str] = None,
+                 oauth_token: Optional[str] = None,
+                 memory: Optional[MemorySystem] = None,
+                 oauth_manager=None):
+        # Tenta OAuth armazenado automaticamente se oauth_manager fornecido
+        if oauth_manager and not oauth_token:
+            oauth_token = oauth_manager.get_valid_token()
+        self.client = _build_anthropic_client(api_key=api_key, oauth_token=oauth_token)
+        self._oauth_token = oauth_token
         self.thinking_mgr = AdaptiveThinkingManager()
         self.memory = memory or MemorySystem()
 
