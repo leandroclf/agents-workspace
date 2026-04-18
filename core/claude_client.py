@@ -173,9 +173,6 @@ def make_client(memory: Optional[MemorySystem] = None,
     if cli.is_available():
         return ClaudeClient(backend=cli, memory=mem)
 
-    if has_real_key:
-        return ClaudeClient(backend=_AnthropicAPIBackend(api_key=api_key_env), memory=mem)
-
     raise RuntimeError(
         "Nenhum backend configurado.\n"
         "Opção 1 (assinatura): defina BACKEND=claude-code no .env\n"
