@@ -5,15 +5,20 @@ import subprocess
 
 from core.claude_code_backend import BackendLimitError
 
+# Model name → (cli_model_flag | None, effort)
+# None means omit -m flag (uses account default — required for ChatGPT subscription accounts)
 CODEX_MODEL_MAP = {
-    "code":          ("gpt-5.3-codex", "high"),
-    "architecture":  ("gpt-5.4",       "high"),
-    "analysis":      ("gpt-5.4",       "medium"),
-    "orchestration": ("gpt-5.4",       "high"),
-    "validation":    ("gpt-5.4-mini",  "low"),
-    "summary":       ("gpt-5.4-mini",  "low"),
-    "chat":          ("gpt-5.4-mini",  "low"),
+    "code":          (None, "high"),
+    "architecture":  (None, "high"),
+    "analysis":      (None, "medium"),
+    "orchestration": (None, "high"),
+    "validation":    (None, "low"),
+    "summary":       (None, "low"),
+    "chat":          (None, "low"),
 }
+
+# Override with explicit model name if set (API key accounts support model selection)
+_CODEX_MODEL_OVERRIDE = os.environ.get("CODEX_MODEL")
 
 CLI_TIMEOUT = 180
 
@@ -37,15 +42,13 @@ class CodexBackend:
     def complete(self, prompt: str, system: str = "",
                  model: str = "chat", max_tokens: int = 4096) -> dict:
         task_key = model if model in CODEX_MODEL_MAP else "chat"
-        codex_model, effort = CODEX_MODEL_MAP[task_key]
+        _, effort = CODEX_MODEL_MAP[task_key]
+        codex_model = _CODEX_MODEL_OVERRIDE  # None unless explicitly set
 
-        cmd = [
-            self.codex_bin, "exec",
-            "--json",
-            "--skip-git-repo-check",
-            "-m", codex_model,
-            "-c", f"model_reasoning_effort={effort}",
-        ]
+        cmd = [self.codex_bin, "exec", "--json", "--skip-git-repo-check"]
+        if codex_model:
+            cmd += ["-m", codex_model]
+        cmd += ["-c", f"model_reasoning_effort={effort}"]
         if system:
             cmd += ["-c", f"system.prompt={system}"]
 
@@ -75,7 +78,7 @@ class CodexBackend:
 
         return {
             "text": text,
-            "model": codex_model,
+            "model": codex_model or "codex-default",
             "input_tokens": input_tok,
             "output_tokens": output_tok,
             "cost_usd": 0.0,
@@ -94,12 +97,23 @@ def _parse_codex_jsonl(output: str) -> tuple[str, int, int]:
         except json.JSONDecodeError:
             continue
         etype = event.get("type")
-        payload = event.get("payload", {})
-        if etype == "response_item":
+        # Format: {"type":"item.completed","item":{"type":"agent_message","text":"..."}}
+        if etype == "item.completed":
+            item = event.get("item", {})
+            if item.get("type") == "agent_message" and item.get("text"):
+                text = item["text"]
+        # Legacy format: response_item with content blocks
+        elif etype == "response_item":
+            payload = event.get("payload", {})
             for block in payload.get("content", []):
                 if block.get("type") == "output_text":
                     text = block.get("text", text)
-        elif etype == "event_msg" and payload.get("type") == "token_count":
+        elif etype == "turn.completed":
+            usage = event.get("usage", {})
+            input_tok = usage.get("input_tokens", input_tok)
+            output_tok = usage.get("output_tokens", output_tok)
+        payload = event.get("payload", {})
+        if etype == "event_msg" and payload.get("type") == "token_count":
             info = payload.get("info", {})
             usage = info.get("last_token_usage", {})
             input_tok = usage.get("input_tokens", 0)

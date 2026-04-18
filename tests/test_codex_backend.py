@@ -57,10 +57,10 @@ def test_correct_model_selected_by_task_key(mock_run):
     )
     backend = CodexBackend()
     result = backend.complete(prompt="escreva código", model="code")
-    assert result["model"] == "gpt-5.3-codex"
+    # Without CODEX_MODEL override, uses account default (no -m flag)
+    assert result["model"] == "codex-default"
     cmd = mock_run.call_args[0][0]
-    assert "-m" in cmd
-    assert cmd[cmd.index("-m") + 1] == "gpt-5.3-codex"
+    assert "-m" not in cmd
 
 
 @patch("subprocess.run")
