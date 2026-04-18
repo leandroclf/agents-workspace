@@ -8,6 +8,9 @@ from core.agents.coder_agent import CoderAgent
 from core.agents.analysis_agent import AnalysisAgent
 from core.agents.executor_agent import ExecutorAgent
 from core.agents.validator_agent import ValidatorAgent
+from core.agents.worldbank_agent import WorldBankRiskAgent
+from core.agents.wikidata_agent import WikidataEntityAgent
+from core.agents.openalex_agent import OpenAlexEnrichmentAgent
 from core.memory_system import MemorySystem
 from core.skill_manager import SkillManager
 
@@ -33,6 +36,9 @@ AGENT_MAP = {
     "analysis":  AnalysisAgent,
     "executor":  ExecutorAgent,
     "validator": ValidatorAgent,
+    "worldbank": WorldBankRiskAgent,
+    "wikidata":  WikidataEntityAgent,
+    "openalex":  OpenAlexEnrichmentAgent,
 }
 
 

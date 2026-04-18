@@ -89,6 +89,61 @@ def history(limit: int):
 
 
 @cli.command()
+@click.argument("task")
+@click.option("--country", "-c", default="", help="Código de país ISO-2 (ex: BR)")
+@click.option("--price", "-p", default=0.0, type=float, help="Preço base em USD")
+@click.option("--countries", default="", help="Lista de países separados por vírgula para batch")
+def risk(task: str, country: str, price: float, countries: str):
+    """Análise de risco-país e precificação (World Bank)."""
+    from core.agents.worldbank_agent import WorldBankRiskAgent
+    agent = WorldBankRiskAgent()
+    kwargs = {}
+    if country:
+        kwargs["country_code"] = country
+    if price:
+        kwargs["base_price"] = price
+    if countries:
+        kwargs["countries"] = [c.strip().upper() for c in countries.split(",") if c.strip()]
+    with console.status("[bold blue]Consultando World Bank Risk..."):
+        result = agent.run(task=task, **kwargs)
+    console.print(Panel(result["text"], title="[cyan]WorldBank Risk Agent[/cyan]"))
+
+
+@cli.command()
+@click.argument("task")
+@click.option("--entity", "-e", default="", help="Nome da entidade para match")
+@click.option("--threshold", default=0.7, type=float, help="Confiança mínima (0-1)")
+def entity(task: str, entity: str, threshold: float):
+    """Resolução de entidades e enriquecimento Wikidata."""
+    from core.agents.wikidata_agent import WikidataEntityAgent
+    agent = WikidataEntityAgent()
+    kwargs = {"confidence_threshold": threshold}
+    if entity:
+        kwargs["entity_name"] = entity
+    with console.status("[bold blue]Consultando Wikidata..."):
+        result = agent.run(task=task, **kwargs)
+    console.print(Panel(result["text"], title="[cyan]Wikidata Entity Agent[/cyan]"))
+
+
+@cli.command()
+@click.argument("task")
+@click.option("--account", "-a", default="", help="ID da conta")
+@click.option("--score", "-s", default=0.0, type=float, help="Score de valor (0-100)")
+def enrich(task: str, account: str, score: float):
+    """Enriquecimento de leads com OpenAlex."""
+    from core.agents.openalex_agent import OpenAlexEnrichmentAgent
+    agent = OpenAlexEnrichmentAgent()
+    kwargs = {}
+    if account:
+        kwargs["account_id"] = account
+    if score:
+        kwargs["score"] = score
+    with console.status("[bold blue]Consultando OpenAlex..."):
+        result = agent.run(task=task, **kwargs)
+    console.print(Panel(result["text"], title="[cyan]OpenAlex Enrichment Agent[/cyan]"))
+
+
+@cli.command()
 def stats():
     """Mostrar estatísticas do workspace."""
     from core.memory_system import MemorySystem
