@@ -1,0 +1,15 @@
+name: daily_standup
+description: Gerar relatório diário de standup a partir do git log
+trigger: schedule
+
+steps:
+  - name: get_git_summary
+    task: "Resuma em bullet points as mudanças mais recentes de um projeto de software"
+    agent: analysis
+    output_var: git_summary
+
+  - name: generate_standup
+    task: "Com base neste resumo, gere um standup no formato: O QUE FIZ / O QUE FAREI / IMPEDIMENTOS"
+    agent: chat
+    depends_on: [git_summary]
+    output_var: standup_text
