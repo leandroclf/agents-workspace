@@ -4,15 +4,18 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 
 const server = new Server(
   { name: "git-mcp", version: "1.0.0" },
   { capabilities: { tools: {} } }
 );
 
-function git(cmd: string, cwd: string = process.cwd()): string {
-  return execSync(`git ${cmd}`, { cwd, encoding: "utf-8" });
+function git(args: string[], cwd: string = process.cwd()): string {
+  const result = spawnSync("git", args, { cwd, encoding: "utf-8" });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(result.stderr || `git exited with ${result.status}`);
+  return result.stdout;
 }
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -65,19 +68,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case "git_status":
-        return { content: [{ type: "text", text: git("status", repoPath) }] };
+        return { content: [{ type: "text", text: git(["status"], repoPath) }] };
       case "git_log": {
-        const limit = (args?.limit as number) || 10;
-        const log = git(`log --oneline -${limit}`, repoPath);
+        const limit = Math.min(Math.max(1, (args?.limit as number) || 10), 100);
+        const log = git(["log", "--oneline", `-${limit}`], repoPath);
         return { content: [{ type: "text", text: log }] };
       }
       case "git_diff": {
         const file = args?.file as string | undefined;
-        const diff = git(file ? `diff -- ${file}` : "diff", repoPath);
+        const gitArgs = file ? ["diff", "--", file] : ["diff"];
+        const diff = git(gitArgs, repoPath);
         return { content: [{ type: "text", text: diff || "Sem alterações" }] };
       }
       case "git_branches":
-        return { content: [{ type: "text", text: git("branch -a", repoPath) }] };
+        return { content: [{ type: "text", text: git(["branch", "-a"], repoPath) }] };
       default:
         return { content: [{ type: "text", text: `Unknown tool: ${name}`, isError: true }] };
     }
