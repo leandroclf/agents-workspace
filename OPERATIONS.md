@@ -29,3 +29,28 @@ cp .env.example .env
 - SQLite lock: reinicie o processo
 - RateLimitError: o sistema retenta automaticamente com backoff exponencial
 - ModuleNotFoundError: ative o venv -> source venv/bin/activate
+
+## Usando com assinatura claude.ai (sem API key)
+
+O workspace detecta automaticamente o Claude Code CLI e usa sua assinatura.
+Não é necessário configurar ANTHROPIC_API_KEY.
+
+```bash
+# Verificar que o backend está configurado:
+grep BACKEND .env
+# Deve mostrar: BACKEND=claude-code
+
+# Testar o backend diretamente:
+echo "Responda apenas: OK" | claude -p --output-format json --no-session-persistence | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['result'])"
+
+# Usar o workspace normalmente:
+python3 cli.py chat "Olá, estou usando minha assinatura!"
+```
+
+## Usando com API key (billing por token)
+
+```bash
+# No .env:
+BACKEND=api
+ANTHROPIC_API_KEY=sk-ant-...
+```
