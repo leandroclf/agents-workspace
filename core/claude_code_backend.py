@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 
@@ -45,6 +46,10 @@ class ClaudeCodeBackend:
         if system:
             cmd += ["--system-prompt", system]
 
+        # Remove ANTHROPIC_API_KEY do ambiente do subprocess — o CLI usa
+        # credenciais da sessão instalada; uma API key placeholder causaria 401.
+        env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+
         try:
             proc = subprocess.run(
                 cmd,
@@ -52,6 +57,7 @@ class ClaudeCodeBackend:
                 capture_output=True,
                 text=True,
                 timeout=CLI_TIMEOUT,
+                env=env,
             )
         except FileNotFoundError:
             raise ClaudeCodeError(
