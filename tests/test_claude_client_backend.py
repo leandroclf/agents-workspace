@@ -52,9 +52,23 @@ def test_make_client_uses_claude_code_when_env_set(tmp_path, monkeypatch):
     monkeypatch.setenv("BACKEND", "claude-code")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     memory = MemorySystem(db_path=str(tmp_path / "m.db"))
-    with patch("core.claude_code_backend.ClaudeCodeBackend.is_available", return_value=True):
+    with patch("core.claude_code_backend.ClaudeCodeBackend.is_available", return_value=True), \
+         patch("core.codex_backend.CodexBackend.is_available", return_value=False):
         client = make_client(memory=memory)
+    # Com codex indisponível, retorna ClaudeCodeBackend direto
     assert isinstance(client._backend, ClaudeCodeBackend)
+
+
+def test_make_client_builds_fallback_chain_when_both_available(tmp_path, monkeypatch):
+    monkeypatch.setenv("BACKEND", "claude-code")
+    monkeypatch.setenv("FALLBACK_CHAIN_ENABLED", "true")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    memory = MemorySystem(db_path=str(tmp_path / "m.db"))
+    with patch("core.claude_code_backend.ClaudeCodeBackend.is_available", return_value=True), \
+         patch("core.codex_backend.CodexBackend.is_available", return_value=True):
+        client = make_client(memory=memory)
+    from core.fallback_backend import FallbackBackend
+    assert isinstance(client._backend, FallbackBackend)
 
 
 def test_make_client_falls_back_to_api_key(tmp_path, monkeypatch):

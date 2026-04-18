@@ -108,7 +108,16 @@ class ClaudeClient:
         model_full = self.select_model(task_type)
 
         from core.claude_code_backend import ClaudeCodeBackend
-        if isinstance(self._backend, ClaudeCodeBackend):
+        from core.codex_backend import CodexBackend
+        from core.fallback_backend import FallbackBackend
+
+        if isinstance(self._backend, FallbackBackend):
+            # FallbackBackend repassa para o backend ativo; passamos task_type.value
+            # para que CodexBackend resolva o modelo correto internamente
+            model = task_type.value
+        elif isinstance(self._backend, CodexBackend):
+            model = task_type.value
+        elif isinstance(self._backend, ClaudeCodeBackend):
             model = _CLI_ALIAS.get(model_full, "sonnet")
         else:
             model = model_full
@@ -143,38 +152,66 @@ class ClaudeClient:
 
 
 def make_client(memory: Optional[MemorySystem] = None,
-                api_key: Optional[str] = None) -> ClaudeClient:
+                api_key: Optional[str] = None) -> "ClaudeClient":
     """
-    Factory com detecção automática de backend.
+    Factory com detecção automática de backend e chain de fallback.
 
-    Priority:
-      1. BACKEND=claude-code → ClaudeCodeBackend (uses subscription)
-      2. BACKEND=api or API key present → _AnthropicAPIBackend
-      3. claude CLI available and no API key → ClaudeCodeBackend (auto)
+    Prioridade (BACKEND env var):
+      claude-code → ClaudeCodeBackend primário, Codex + API como fallback (se FALLBACK_CHAIN_ENABLED)
+      codex       → CodexBackend direto
+      api         → _AnthropicAPIBackend direto
+      (omitir)    → auto-detect: claude CLI → codex CLI → API key → erro
     """
     from core.claude_code_backend import ClaudeCodeBackend
+    from core.codex_backend import CodexBackend
+    from core.fallback_backend import FallbackBackend
 
     mem = memory or MemorySystem()
     backend_env = os.environ.get("BACKEND", "").lower()
+    fallback_enabled = os.environ.get("FALLBACK_CHAIN_ENABLED", "true").lower() != "false"
     api_key_env = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
     has_real_key = bool(api_key_env) and api_key_env != "sk-ant-..."
 
     if backend_env == "claude-code":
-        cli = ClaudeCodeBackend()
-        if not cli.is_available():
+        primary = ClaudeCodeBackend()
+        if not primary.is_available():
             raise RuntimeError("BACKEND=claude-code mas `claude` CLI não encontrado no PATH")
-        return ClaudeClient(backend=cli, memory=mem)
+        if fallback_enabled:
+            backends: list = [primary]
+            if CodexBackend().is_available():
+                backends.append(CodexBackend())
+            if has_real_key:
+                backends.append(_AnthropicAPIBackend(api_key=api_key_env))
+            backend = FallbackBackend(backends) if len(backends) > 1 else primary
+        else:
+            backend = primary
+        return ClaudeClient(backend=backend, memory=mem)
+
+    if backend_env == "codex":
+        codex = CodexBackend()
+        if not codex.is_available():
+            raise RuntimeError("BACKEND=codex mas `codex` CLI não encontrado no PATH")
+        return ClaudeClient(backend=codex, memory=mem)
 
     if backend_env == "api" or has_real_key:
         return ClaudeClient(backend=_AnthropicAPIBackend(api_key=api_key_env or None), memory=mem)
 
-    # Auto-detect: prefer CLI if available
-    cli = ClaudeCodeBackend()
-    if cli.is_available():
-        return ClaudeClient(backend=cli, memory=mem)
-
-    raise RuntimeError(
-        "Nenhum backend configurado.\n"
-        "Opção 1 (assinatura): defina BACKEND=claude-code no .env\n"
-        "Opção 2 (API key):    defina ANTHROPIC_API_KEY no .env"
-    )
+    # Auto-detect: claude CLI → codex CLI → API key → erro
+    backends = []
+    claude_cli = ClaudeCodeBackend()
+    codex_cli = CodexBackend()
+    if claude_cli.is_available():
+        backends.append(claude_cli)
+    if codex_cli.is_available():
+        backends.append(codex_cli)
+    if has_real_key:
+        backends.append(_AnthropicAPIBackend(api_key=api_key_env))
+    if not backends:
+        raise RuntimeError(
+            "Nenhum backend configurado.\n"
+            "Opção 1 (claude CLI): BACKEND=claude-code\n"
+            "Opção 2 (codex CLI):  BACKEND=codex\n"
+            "Opção 3 (API key):    ANTHROPIC_API_KEY=sk-ant-..."
+        )
+    backend = FallbackBackend(backends) if len(backends) > 1 else backends[0]
+    return ClaudeClient(backend=backend, memory=mem)
