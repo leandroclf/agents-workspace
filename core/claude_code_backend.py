@@ -1,7 +1,6 @@
 import json
 import shutil
 import subprocess
-from typing import Optional
 
 MODEL_ALIASES = {
     "claude-opus-4-7":   "opus",
