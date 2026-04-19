@@ -35,7 +35,9 @@ class TestLeadReportAgent(unittest.TestCase):
     def test_run_invalid_json_returns_error(self):
         agent = self._make_agent()
         result = agent.run(["not-json"])
-        self.assertIn("Erro", result)
+        # run() now returns a dict; check the error text is in the "text" key
+        text = result["text"] if isinstance(result, dict) else result
+        self.assertIn("Erro", text)
 
     def test_sample_leads_not_used_in_real_path(self):
         import json
@@ -65,7 +67,9 @@ class TestLeadReportAgent(unittest.TestCase):
         with patch.object(agent.__class__, 'generate_report', return_value="cli-report") as mock:
             result = agent.run([json_str])
             mock.assert_called_once_with(leads)
-            self.assertEqual(result, "cli-report")
+            # run() now returns a dict; the report text is in the "text" key
+            text = result["text"] if isinstance(result, dict) else result
+            self.assertEqual(text, "cli-report")
 
 
 if __name__ == "__main__":

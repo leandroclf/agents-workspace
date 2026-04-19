@@ -99,7 +99,12 @@ Quando solicitado a decompor, responda em JSON:
     def _execute_subtask(self, subtask: SubTask, context: str = "") -> dict:
         agent_class = AGENT_MAP.get(subtask.agent_type, ExecutorAgent)
         agent = agent_class(memory=self.memory, skill_manager=self.skill_manager)
-        return agent.run(task=subtask.description, step_context=context)
+        result = agent.run(args=[subtask.description])
+        # Normalise: some agents return str, others return dict
+        if isinstance(result, str):
+            return {"text": result, "agent": subtask.agent_type,
+                    "input_tokens": 0, "output_tokens": 0}
+        return result
 
     def run(self, task: str, parallel: bool = True, **kwargs) -> dict[str, Any]:
         plan = self.decompose(task)

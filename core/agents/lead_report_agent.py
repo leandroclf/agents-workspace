@@ -46,7 +46,7 @@ Formato: relatório executivo em markdown, linguagem direta, máximo 500 palavra
         result = self._call_api(task=prompt)
         return result.get("text", "")
 
-    def run(self, args: list[str]) -> str:
+    def run(self, args: list[str] = None, task: str = "", **kwargs) -> dict:
         """Demo mode — uses hardcoded sample leads for convenience.
 
         For production use, call run_production(leads) directly or pass a JSON
@@ -58,19 +58,24 @@ Formato: relatório executivo em markdown, linguagem direta, máximo 500 palavra
         Returns:
             Report as a plain string.
         """
+        if args is None:
+            args = []
         if not args or args == ["demo"]:
             import sys
             print(DEMO_MODE_WARNING, file=sys.stderr)
-            return self.generate_report(DEMO_LEADS)
-        # Try to parse JSON leads from first arg
-        try:
-            import json
-            leads = json.loads(args[0])
-            if not isinstance(leads, list):
-                raise ValueError("leads must be a list")
-            return self.generate_report(leads)
-        except (json.JSONDecodeError, ValueError) as e:
-            return f"Erro ao parsear leads: {e}\nUso: lead-report '[{{\"empresa\":\"X\",\"pais\":\"BR\"}}]'"
+            text = self.generate_report(DEMO_LEADS)
+        else:
+            # Try to parse JSON leads from first arg
+            try:
+                import json
+                leads = json.loads(args[0])
+                if not isinstance(leads, list):
+                    raise ValueError("leads must be a list")
+                text = self.generate_report(leads)
+            except (json.JSONDecodeError, ValueError) as e:
+                text = f"Erro ao parsear leads: {e}\nUso: lead-report '[{{\"empresa\":\"X\",\"pais\":\"BR\"}}]'"
+        return {"text": text, "agent": self.name, "model": self.model,
+                "input_tokens": 0, "output_tokens": 0}
 
     def run_production(self, leads: list[dict]) -> str:
         """Production entry point — pass real lead dicts directly.
