@@ -1,7 +1,11 @@
 """Agente de geração de propostas comerciais."""
-import os
+import re
 from datetime import date
+from pathlib import Path
 from core.agents.base_agent import BaseAgent
+from core.claude_client import TaskType
+
+PROPOSALS_DIR = Path.home() / "propostas"
 
 PROPOSAL_TEMPLATE = """
 # Proposta Comercial — LF Soluções
@@ -33,10 +37,26 @@ PROPOSAL_TEMPLATE = """
 class ProposalAgent(BaseAgent):
     name = "proposal"
     description = "Gera propostas comerciais personalizadas para prospects B2B"
-    task_type = "orchestration"
+    task_type = TaskType.ORCHESTRATION
     role_description = "Você é um consultor sênior de automação B2B da LF Soluções."
 
-    def generate(self, cliente: str, segmento: str, objetivo: str, orcamento: str = "a definir") -> str:
+    def _safe_filename(self, cliente: str) -> str:
+        """Remove path separators and special chars, keep alphanumeric/spaces/hyphens."""
+        safe = re.sub(r'[^\w\s\-]', '', cliente, flags=re.UNICODE)
+        safe = re.sub(r'\s+', '_', safe.strip())
+        return safe[:80] or "cliente"
+
+    def _save_proposal(self, content: str, cliente: str) -> Path:
+        PROPOSALS_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"proposta_{self._safe_filename(cliente)}_{date.today().isoformat()}.md"
+        output_path = (PROPOSALS_DIR / filename).resolve()
+        # Security: ensure path is inside PROPOSALS_DIR
+        if not str(output_path).startswith(str(PROPOSALS_DIR.resolve())):
+            raise ValueError(f"Path traversal detectado: {output_path}")
+        output_path.write_text(content, encoding="utf-8")
+        return output_path
+
+    def generate(self, cliente: str, segmento: str, objetivo: str, orcamento: str = "a definir") -> dict:
         prompt = f"""Você é um consultor sênior de automação B2B da LF Soluções.
 Gere uma proposta comercial profissional e persuasiva para:
 - Cliente: {cliente}
@@ -68,14 +88,10 @@ Seja direto, mostre valor, use linguagem executiva em português brasileiro."""
             proximos_passos="[incluído no texto acima]",
         )
 
-        # Save to file
-        filename = f"proposta_{cliente.lower().replace(' ', '_')}_{date.today().isoformat()}.md"
-        output_path = os.path.join(os.path.expanduser("~"), "propostas", filename)
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, "w") as f:
-            f.write(doc)
+        output_path = self._save_proposal(doc, cliente)
+        result_text = f"Proposta gerada: {output_path}\n\n{text}"
 
-        return f"Proposta gerada: {output_path}\n\n{text}"
+        return {"text": result_text, "file": str(output_path), "cliente": cliente}
 
     def run(self, task: str = "", args: list = None, **kwargs) -> dict:
         # Support CLI args list: [cliente, segmento, objetivo, orcamento?]
@@ -89,6 +105,6 @@ Seja direto, mostre valor, use linguagem executiva em português brasileiro."""
         segmento = args[1]
         objetivo = args[2]
         orcamento = args[3] if len(args) > 3 else "a definir"
-        text = self.generate(cliente, segmento, objetivo, orcamento)
-        return {"text": text, "agent": self.name, "model": self.model,
+        result = self.generate(cliente, segmento, objetivo, orcamento)
+        return {"text": result["text"], "agent": self.name, "model": self.model,
                 "input_tokens": 0, "output_tokens": 0}
