@@ -27,7 +27,7 @@ O **Claude Workspace 2026** é uma plataforma de automação inteligente constru
 
 ### Resultado técnico
 
-- **90+ testes automatizados** passando (unitários + integração E2E)
+- **110+ testes automatizados** passando (unitários + integração E2E)
 - **Zero dependência de API key** quando usando `BACKEND=claude-code`
 - **Sem shell injection** — todos os subprocessos usam array de argumentos
 - **Retrocompatível** — aceita `api_key=`, `oauth_token=` e o novo `backend=` na mesma interface
@@ -237,7 +237,7 @@ claude-workspace/
 │   └── engine.py                # Motor de workflows YAML
 ├── observability/
 │   └── telemetry.py             # OpenTelemetry (traces + métricas)
-├── tests/                       # 90+ testes pytest
+├── tests/                       # 110+ testes pytest
 ├── cli.py                       # Entrypoint Click
 ├── authenticate.py              # Setup OAuth interativo
 ├── docker-compose.yml           # PostgreSQL + Redis
