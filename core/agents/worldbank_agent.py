@@ -11,7 +11,7 @@ from core.memory_system import MemorySystem
 from core.skill_manager import SkillManager
 
 
-WORLDBANK_BASE_URL = "http://localhost:8001"
+WORLDBANK_BASE_URL = "https://lf-worldbank-risk-pricing.onrender.com"
 
 STATIC_RISK = {
     "BR": 62, "US": 22, "DE": 18, "IN": 58, "NG": 78,

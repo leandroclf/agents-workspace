@@ -8,7 +8,7 @@ from typing import Any, Optional
 from core.agents.base_agent import BaseAgent
 
 
-WIKIDATA_BASE_URL = "http://localhost:8002"
+WIKIDATA_BASE_URL = "https://lf-wikidata-entity-graph.onrender.com"
 
 
 def _http_post(path: str, body: dict, base: str = WIKIDATA_BASE_URL) -> dict:

@@ -8,7 +8,7 @@ from typing import Any, Optional
 from core.agents.base_agent import BaseAgent
 
 
-OPENALEX_BASE_URL = "http://localhost:8003"
+OPENALEX_BASE_URL = "https://lf-openalex-enrichment-mvp.onrender.com"
 
 
 def _http_post(path: str, body: dict, base: str = OPENALEX_BASE_URL) -> dict:
