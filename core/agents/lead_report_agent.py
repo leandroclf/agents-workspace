@@ -1,7 +1,11 @@
 """Agente de relatório de leads com inteligência de dados."""
 from core.agents.base_agent import BaseAgent
 
-DEMO_MODE_WARNING = "[DEMO] Usando leads de exemplo. Para leads reais: lead-report '[{\"empresa\":\"X\",\"pais\":\"BR\"}]'"
+DEMO_MODE_WARNING = (
+    "[DEMO] Usando leads de exemplo — NÃO use em produção. "
+    "Para leads reais, chame run_production(leads) ou CLI: "
+    "lead-report '[{\"empresa\":\"X\",\"pais\":\"BR\"}]'"
+)
 
 DEMO_LEADS = [
     {"empresa": "Clínica São Paulo", "pais": "BR", "setor": "saúde", "contato": "Diretor"},
@@ -43,6 +47,17 @@ Formato: relatório executivo em markdown, linguagem direta, máximo 500 palavra
         return result.get("text", "")
 
     def run(self, args: list[str]) -> str:
+        """Demo mode — uses hardcoded sample leads for convenience.
+
+        For production use, call run_production(leads) directly or pass a JSON
+        string as the first element of args.
+
+        Args:
+            args: [] or ["demo"] → demo mode; [json_string] → real leads.
+
+        Returns:
+            Report as a plain string.
+        """
         if not args or args == ["demo"]:
             import sys
             print(DEMO_MODE_WARNING, file=sys.stderr)
@@ -56,3 +71,20 @@ Formato: relatório executivo em markdown, linguagem direta, máximo 500 palavra
             return self.generate_report(leads)
         except (json.JSONDecodeError, ValueError) as e:
             return f"Erro ao parsear leads: {e}\nUso: lead-report '[{{\"empresa\":\"X\",\"pais\":\"BR\"}}]'"
+
+    def run_production(self, leads: list[dict]) -> str:
+        """Production entry point — pass real lead dicts directly.
+
+        This is the preferred method for programmatic/production use.
+        Bypasses demo mode entirely and never prints warnings.
+
+        Args:
+            leads: List of lead dicts, e.g.
+                   [{"empresa": "X", "pais": "BR", "setor": "tech", "contato": "CEO"}]
+
+        Returns:
+            Report as a plain string.
+        """
+        if not isinstance(leads, list):
+            raise TypeError("leads must be a list of dicts")
+        return self.generate_report(leads)

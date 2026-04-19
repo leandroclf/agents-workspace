@@ -47,6 +47,26 @@ class TestLeadReportAgent(unittest.TestCase):
             called_with = mock.call_args[0][0]
             self.assertNotEqual(called_with, DEMO_LEADS)
 
+    def test_run_production_passes_leads_directly(self):
+        """run_production() should call generate_report with the exact leads list."""
+        agent = self._make_agent()
+        leads = [{"empresa": "Prod Corp", "pais": "US", "setor": "finance"}]
+        with patch.object(agent.__class__, 'generate_report', return_value="prod-report") as mock:
+            result = agent.run_production(leads)
+            mock.assert_called_once_with(leads)
+            self.assertEqual(result, "prod-report")
+
+    def test_cli_style_json_string_in_run(self):
+        """CLI passes run([json_string]); verify it reaches generate_report correctly."""
+        import json
+        agent = self._make_agent()
+        leads = [{"empresa": "CLI Corp", "pais": "BR"}]
+        json_str = json.dumps(leads)
+        with patch.object(agent.__class__, 'generate_report', return_value="cli-report") as mock:
+            result = agent.run([json_str])
+            mock.assert_called_once_with(leads)
+            self.assertEqual(result, "cli-report")
+
 
 if __name__ == "__main__":
     unittest.main()

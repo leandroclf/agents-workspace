@@ -158,14 +158,23 @@ def proposal(cliente: str, segmento: str, objetivo: str, orcamento: str):
 
 
 @cli.command(name="lead-report")
-@click.argument("mode", default="demo")
+@click.argument("mode", default="")
 def lead_report(mode: str):
-    """Gerar relatório executivo de leads com inteligência de dados."""
+    """Gerar relatório executivo de leads com inteligência de dados.
+
+    MODE pode ser:
+      (vazio)   — demo com leads de exemplo
+      demo      — demo com leads de exemplo
+      '[{...}]' — JSON com leads reais (produção)
+    """
     from core.agents.lead_report_agent import LeadReportAgent
     agent = LeadReportAgent()
+    # Build args list: empty → demo; "demo" → demo; JSON string → real leads
+    args = [] if not mode or mode == "demo" else [mode]
     with console.status("[bold blue]Gerando relatório de leads..."):
-        result = agent.run()
-    console.print(Panel(result["text"], title="[cyan]Lead Report Agent[/cyan]"))
+        result = agent.run(args)
+    # run() returns a plain str
+    console.print(Panel(result, title="[cyan]Lead Report Agent[/cyan]"))
 
 
 @cli.command()
