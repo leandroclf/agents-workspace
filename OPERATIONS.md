@@ -17,6 +17,14 @@ python cli.py entity "consulta" --entity "Petrobras"
 python cli.py enrich "análise" --account "USP"
 ```
 
+## Proposal Agent
+
+```bash
+# Diretório de propostas (padrão: ~/propostas)
+export PROPOSALS_DIR=/custom/path
+python cli.py proposal "Empresa" "setor" "objetivo"
+```
+
 ## Backend Selection
 
 | Env Var | Value | Behavior |

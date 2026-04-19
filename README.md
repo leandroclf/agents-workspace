@@ -650,7 +650,7 @@ Arquivo: `.env` (copiar de `.env.example`)
 | `DAILY_COST_LIMIT_USD` | `50.0` | Limite diário de custo (modo API) |
 | `KEEPALIVE_ENDPOINTS` | endpoints internos | JSON array `[{"name":"x","url":"..."}]` |
 | `KEEPALIVE_INTERVAL` | `300` | Intervalo keepalive em segundos |
-| `PROPOSALS_DIR` | `proposals/` | Diretório de saída das propostas geradas |
+| `PROPOSALS_DIR` | `~/propostas` | Diretório de saída das propostas; padrão `~/propostas`, sobrepor com `PROPOSALS_DIR=/custom/path` |
 
 ---
 

@@ -1,11 +1,11 @@
 """Agente de geração de propostas comerciais."""
+import os
 import re
 from datetime import date
 from pathlib import Path
 from core.agents.base_agent import BaseAgent
-from core.claude_client import TaskType
 
-PROPOSALS_DIR = Path.home() / "propostas"
+PROPOSALS_DIR = Path(os.environ.get("PROPOSALS_DIR", str(Path.home() / "propostas")))
 
 PROPOSAL_TEMPLATE = """
 # Proposta Comercial — LF Soluções
@@ -37,7 +37,7 @@ PROPOSAL_TEMPLATE = """
 class ProposalAgent(BaseAgent):
     name = "proposal"
     description = "Gera propostas comerciais personalizadas para prospects B2B"
-    task_type = TaskType.ORCHESTRATION
+    task_type = "orchestration"
     role_description = "Você é um consultor sênior de automação B2B da LF Soluções."
 
     def _safe_filename(self, cliente: str) -> str:
@@ -95,8 +95,21 @@ Seja direto, mostre valor, use linguagem executiva em português brasileiro."""
 
     def run(self, task: str = "", args: list = None, **kwargs) -> dict:
         # Support CLI args list: [cliente, segmento, objetivo, orcamento?]
+        # When called from orchestrator with a single description string, parse it.
         if args is None:
             args = []
+        if len(args) == 1:
+            # Single free-form description — split on spaces as best-effort parsing:
+            # e.g. "Empresa XYZ saúde acelerar vendas" → cliente=words[0..1], segmento=words[2], objetivo=rest
+            parts = args[0].split()
+            if len(parts) >= 3:
+                cliente = parts[0]
+                segmento = parts[1]
+                objetivo = " ".join(parts[2:])
+                args = [cliente, segmento, objetivo]
+            else:
+                # Fall through to the usage error below
+                args = args[0].split()
         if len(args) < 3:
             return {"text": "Uso: proposal <cliente> <segmento> <objetivo> [orcamento]",
                     "agent": self.name, "model": self.model,

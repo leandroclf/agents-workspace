@@ -58,5 +58,15 @@ class TestProposalAgentSafety(unittest.TestCase):
             self.assertIn("file", result)
 
 
+
+    def test_proposals_dir_overridable_by_env(self):
+        import os, importlib
+        with patch.dict(os.environ, {"PROPOSALS_DIR": "/tmp/test_proposals"}):
+            import core.agents.proposal_agent as mod
+            importlib.reload(mod)
+            self.assertEqual(str(mod.PROPOSALS_DIR), "/tmp/test_proposals")
+        # Reload back to normal
+        importlib.reload(mod)
+
 if __name__ == "__main__":
     unittest.main()
