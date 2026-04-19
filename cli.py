@@ -173,8 +173,8 @@ def lead_report(mode: str):
     args = [] if not mode or mode == "demo" else [mode]
     with console.status("[bold blue]Gerando relatório de leads..."):
         result = agent.run(args)
-    # run() returns a plain str
-    console.print(Panel(result, title="[cyan]Lead Report Agent[/cyan]"))
+    text = result["text"] if isinstance(result, dict) else result
+    console.print(Panel(text, title="[cyan]Lead Report Agent[/cyan]"))
 
 
 @cli.command()

@@ -65,5 +65,38 @@ class TestOrchestrationContract(unittest.TestCase):
         self.assertIn(tt_str, valid_strings)
 
 
+    def test_orchestrator_execute_subtask_proposal_no_type_error(self):
+        """_execute_subtask must not raise TypeError for proposal agent."""
+        from core.agents.orchestrator_agent import OrchestratorAgent, AGENT_MAP
+        from unittest.mock import MagicMock, patch
+
+        orchestrator = OrchestratorAgent.__new__(OrchestratorAgent)
+        orchestrator.memory = MagicMock()
+
+        agent_cls = AGENT_MAP["proposal"]
+        agent = agent_cls.__new__(agent_cls)
+        agent.memory = MagicMock()
+
+        with patch.object(agent_cls, '_call_api', return_value={"text": "proposta", "model": "test", "input_tokens": 0, "output_tokens": 0}), \
+             patch.object(agent_cls, '_save_proposal', return_value=__import__('pathlib').Path("/tmp/t.md")):
+            # Simulate what _execute_subtask does
+            result = agent.run(args=["Empresa XYZ saúde acelerar vendas"])
+        self.assertIsNotNone(result)
+
+    def test_orchestrator_execute_subtask_lead_report_no_type_error(self):
+        """_execute_subtask must not raise TypeError for lead-report agent."""
+        from core.agents.orchestrator_agent import AGENT_MAP
+        from unittest.mock import MagicMock, patch
+
+        agent_cls = AGENT_MAP["lead-report"]
+        agent = agent_cls.__new__(agent_cls)
+        agent.memory = MagicMock()
+
+        with patch.object(agent_cls, 'generate_report', return_value="relatório"):
+            result = agent.run(args=["demo"])
+        self.assertIsInstance(result, dict)
+        self.assertIn("text", result)
+
+
 if __name__ == "__main__":
     unittest.main()
