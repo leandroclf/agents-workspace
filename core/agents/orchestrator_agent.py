@@ -11,6 +11,8 @@ from core.agents.validator_agent import ValidatorAgent
 from core.agents.worldbank_agent import WorldBankRiskAgent
 from core.agents.wikidata_agent import WikidataEntityAgent
 from core.agents.openalex_agent import OpenAlexEnrichmentAgent
+from core.agents.proposal_agent import ProposalAgent
+from core.agents.lead_report_agent import LeadReportAgent
 from core.memory_system import MemorySystem
 from core.skill_manager import SkillManager
 
@@ -39,6 +41,8 @@ AGENT_MAP = {
     "worldbank": WorldBankRiskAgent,
     "wikidata":  WikidataEntityAgent,
     "openalex":  OpenAlexEnrichmentAgent,
+    "proposal":  ProposalAgent,
+    "lead-report": LeadReportAgent,
 }
 
 

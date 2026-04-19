@@ -144,6 +144,31 @@ def enrich(task: str, account: str, score: float):
 
 
 @cli.command()
+@click.argument("cliente")
+@click.argument("segmento")
+@click.argument("objetivo")
+@click.option("--orcamento", "-o", default="a definir", help="Orçamento indicado pelo cliente")
+def proposal(cliente: str, segmento: str, objetivo: str, orcamento: str):
+    """Gerar proposta comercial personalizada para um prospect B2B."""
+    from core.agents.proposal_agent import ProposalAgent
+    agent = ProposalAgent()
+    with console.status("[bold green]Gerando proposta comercial..."):
+        result = agent.run(args=[cliente, segmento, objetivo, orcamento])
+    console.print(Panel(result["text"], title="[cyan]Proposal Agent — LF Soluções[/cyan]"))
+
+
+@cli.command(name="lead-report")
+@click.argument("mode", default="demo")
+def lead_report(mode: str):
+    """Gerar relatório executivo de leads com inteligência de dados."""
+    from core.agents.lead_report_agent import LeadReportAgent
+    agent = LeadReportAgent()
+    with console.status("[bold blue]Gerando relatório de leads..."):
+        result = agent.run()
+    console.print(Panel(result["text"], title="[cyan]Lead Report Agent[/cyan]"))
+
+
+@cli.command()
 def stats():
     """Mostrar estatísticas do workspace."""
     from core.memory_system import MemorySystem
