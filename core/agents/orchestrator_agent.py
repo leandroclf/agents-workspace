@@ -46,20 +46,38 @@ AGENT_MAP = {
 }
 
 
+AGENT_DESCRIPTIONS = {
+    "coder":       "Escreve, refatora e revisa código. Input: descrição da tarefa de código. Output: código gerado.",
+    "analysis":    "Analisa dados, textos ou resultados e produz insights. Input: dados/texto. Output: análise.",
+    "executor":    "Executa comandos, scripts e tarefas genéricas. Input: comando ou tarefa. Output: resultado.",
+    "validator":   "Valida resultados, testes e qualidade de código. Input: artefato a validar. Output: relatório.",
+    "worldbank":   "Consulta indicadores de risco econômico do Banco Mundial por país. Input: país. Output: indicadores.",
+    "wikidata":    "Enriquece entidades com dados do Wikidata (empresas, pessoas, lugares). Input: nome da entidade. Output: dados estruturados.",
+    "openalex":    "Busca e enriquece dados acadêmicos via OpenAlex. Input: tema ou DOI. Output: publicações/autores.",
+    "proposal":    "Gera proposta comercial personalizada em markdown para um prospect B2B. Input: cliente, segmento, objetivo, orçamento. Output: {text, file, cliente}",
+    "lead-report": "Gera relatório executivo de leads com ranking de prioridade, risco por país e recomendações. Input: JSON list de leads [{empresa, pais, setor}] ou 'demo'. Output: relatório em texto",
+}
+
+_AGENT_LIST = "\n".join(f"  - {k}: {v}" for k, v in AGENT_DESCRIPTIONS.items())
+
+
 class OrchestratorAgent(BaseAgent):
     name = "OrchestratorAgent"
     model = "claude-opus-4-7"
     task_type = "orchestration"
-    role_description = """Você é um orquestrador de tarefas de alto nível.
+    role_description = f"""Você é um orquestrador de tarefas de alto nível.
 Dada uma tarefa complexa, decomponha-a em subtarefas e delegue para agentes especializados.
 
+Agentes disponíveis:
+{_AGENT_LIST}
+
 Quando solicitado a decompor, responda em JSON:
-{
+{{
   "goal": "...",
   "subtasks": [
-    {"id": "1", "description": "...", "agent_type": "coder|analysis|executor|validator", "dependencies": []}
+    {{"id": "1", "description": "...", "agent_type": "<um dos agentes acima>", "dependencies": []}}
   ]
-}"""
+}}"""
 
     def decompose(self, task: str) -> TaskPlan:
         result = self._call_api(
