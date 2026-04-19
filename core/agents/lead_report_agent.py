@@ -1,6 +1,14 @@
 """Agente de relatório de leads com inteligência de dados."""
 from core.agents.base_agent import BaseAgent
 
+DEMO_MODE_WARNING = "[DEMO] Usando leads de exemplo. Para leads reais: lead-report '[{\"empresa\":\"X\",\"pais\":\"BR\"}]'"
+
+DEMO_LEADS = [
+    {"empresa": "Clínica São Paulo", "pais": "BR", "setor": "saúde", "contato": "Diretor"},
+    {"empresa": "Agro Export LTDA", "pais": "BR", "setor": "agronegócio", "contato": "CEO"},
+    {"empresa": "TechCo Solutions", "pais": "US", "setor": "tecnologia", "contato": "CTO"},
+]
+
 
 class LeadReportAgent(BaseAgent):
     name = "lead-report"
@@ -34,13 +42,17 @@ Formato: relatório executivo em markdown, linguagem direta, máximo 500 palavra
         result = self._call_api(task=prompt)
         return result.get("text", "")
 
-    def run(self, task: str = "", **kwargs) -> dict:
-        # Demo mode: generate sample report
-        sample_leads = [
-            {"empresa": "Clínica São Paulo", "pais": "BR", "setor": "saúde", "contato": "Diretor"},
-            {"empresa": "Agro Export LTDA", "pais": "BR", "setor": "agronegócio", "contato": "CEO"},
-            {"empresa": "TechCo Solutions", "pais": "US", "setor": "tecnologia", "contato": "CTO"},
-        ]
-        text = self.generate_report(sample_leads)
-        return {"text": text, "agent": self.name, "model": self.model,
-                "input_tokens": 0, "output_tokens": 0}
+    def run(self, args: list[str]) -> str:
+        if not args or args == ["demo"]:
+            import sys
+            print(DEMO_MODE_WARNING, file=sys.stderr)
+            return self.generate_report(DEMO_LEADS)
+        # Try to parse JSON leads from first arg
+        try:
+            import json
+            leads = json.loads(args[0])
+            if not isinstance(leads, list):
+                raise ValueError("leads must be a list")
+            return self.generate_report(leads)
+        except (json.JSONDecodeError, ValueError) as e:
+            return f"Erro ao parsear leads: {e}\nUso: lead-report '[{{\"empresa\":\"X\",\"pais\":\"BR\"}}]'"
