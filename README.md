@@ -143,12 +143,34 @@ BACKEND=api
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+### Modo 3: Codex CLI — OpenAI Codex via CLI
+
+```bash
+# No .env:
+BACKEND=codex
+CODEX_MODEL=gpt-5.4-mini   # modelo Codex a usar
+```
+
+### Fallback chain automático
+
+Quando `FALLBACK_CHAIN_ENABLED=true`, o workspace tenta backends em cascata ao atingir rate limit:
+
+```
+claude-code → codex → api
+```
+
+```bash
+# No .env:
+FALLBACK_CHAIN_ENABLED=true
+```
+
 ### Detecção automática (sem BACKEND definido)
 
 Se `BACKEND` não está definido no `.env`:
 1. Se `claude` CLI estiver no PATH → usa `ClaudeCodeBackend`
-2. Se `ANTHROPIC_API_KEY` estiver definida → usa `_AnthropicAPIBackend`
-3. Nenhum dos dois → erro com instrução de configuração
+2. Se `codex` CLI estiver no PATH → usa `CodexBackend`
+3. Se `ANTHROPIC_API_KEY` estiver definida → usa `_AnthropicAPIBackend`
+4. Nenhum dos dois → erro com instrução de configuração
 
 ---
 
@@ -395,6 +417,11 @@ python3 cli.py orchestrate "Analise o repositório e gere um relatório de quali
 | `AnalysisAgent` | `analysis` | Opus 4.7 | Análise técnica e comparações |
 | `ExecutorAgent` | `execution` | Haiku 4.5 | Execução de tarefas operacionais |
 | `ValidatorAgent` | `validation` | Sonnet 4.6 | Revisão e validação de resultados |
+| `WorldBankRiskAgent` | `analysis` | Opus 4.7 | Dados de risco soberano via World Bank |
+| `WikidataEntityAgent` | `analysis` | Opus 4.7 | Resolução de entidades via Wikidata |
+| `OpenAlexEnrichmentAgent` | `analysis` | Opus 4.7 | Enriquecimento de leads via OpenAlex |
+| `ProposalAgent` | `analysis` | Opus 4.7 | Geração de propostas comerciais |
+| `LeadReportAgent` | `analysis` | Opus 4.7 | Relatórios de leads com enriquecimento |
 
 ### Criar um agente customizado
 
@@ -602,7 +629,9 @@ Arquivo: `.env` (copiar de `.env.example`)
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `BACKEND` | _(auto)_ | `claude-code` \| `api` \| _(omitir para auto-detect)_ |
+| `BACKEND` | _(auto)_ | `claude-code` \| `codex` \| `api` \| _(omitir para auto-detect)_ |
+| `FALLBACK_CHAIN_ENABLED` | `true` | Ativa cadeia de fallback entre backends |
+| `CODEX_MODEL` | `gpt-5.4-mini` | Modelo Codex quando `BACKEND=codex` |
 | `ANTHROPIC_API_KEY` | — | API key Anthropic (necessário se `BACKEND=api`) |
 | `ANTHROPIC_CLIENT_ID` | — | OAuth client ID (uso experimental) |
 | `ANTHROPIC_CLIENT_SECRET` | — | OAuth client secret (opcional, PKCE público) |
@@ -619,6 +648,9 @@ Arquivo: `.env` (copiar de `.env.example`)
 | `LOG_LEVEL` | `INFO` | Nível de log |
 | `MAX_TOKENS_PER_REQUEST` | `4096` | Limite de tokens por chamada |
 | `DAILY_COST_LIMIT_USD` | `50.0` | Limite diário de custo (modo API) |
+| `KEEPALIVE_ENDPOINTS` | endpoints internos | JSON array `[{"name":"x","url":"..."}]` |
+| `KEEPALIVE_INTERVAL` | `300` | Intervalo keepalive em segundos |
+| `PROPOSALS_DIR` | `proposals/` | Diretório de saída das propostas geradas |
 
 ---
 
@@ -633,6 +665,14 @@ python3 cli.py orchestrate "<tarefa>" --sequential      # Forçar execução seq
 python3 cli.py history                                  # Últimas 10 interações
 python3 cli.py history --limit 50                       # Últimas N interações
 python3 cli.py stats                                    # Estatísticas do workspace
+
+# Agentes especializados
+python3 cli.py proposal "Empresa XYZ" "saúde" "acelerar vendas" --orcamento "15k"
+python3 cli.py lead-report demo
+python3 cli.py lead-report '[{"empresa":"XYZ","pais":"BR","setor":"tech"}]'
+python3 cli.py risk "análise" --country BR
+python3 cli.py entity "consulta" --entity "Petrobras"
+python3 cli.py enrich "análise" --account "USP"
 
 # Ambiente
 source activate_env.sh                                  # Ativar venv + carregar .env
@@ -757,6 +797,30 @@ client = make_client()
 | `ModuleNotFoundError` | venv não ativado | `source venv/bin/activate` |
 | `anthropic.RateLimitError` | Rate limit da API | O `RobustErrorHandler` retenta automaticamente |
 | `json.JSONDecodeError` no backend | Versão antiga do CLI | Atualizar: `npm update -g @anthropic-ai/claude-code` |
+
+---
+
+## Keepalive (Render e backends remotos)
+
+O script `scripts/keepalive.sh` mantém backends remotos ativos com pings periódicos (útil no Render free tier que hiberna após inatividade).
+
+```bash
+# Iniciar em background
+./scripts/keepalive.sh
+# Log em: /tmp/lf-keepalive.log
+
+# Acompanhar log
+tail -f /tmp/lf-keepalive.log
+
+# Configurar endpoints personalizados (JSON)
+export KEEPALIVE_ENDPOINTS='[{"name":"MyAPI","url":"https://myapi.onrender.com/health"}]'
+export KEEPALIVE_INTERVAL=60   # intervalo em segundos (padrão: 300)
+```
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `KEEPALIVE_ENDPOINTS` | endpoints internos | JSON array de `{name, url}` a pingar |
+| `KEEPALIVE_INTERVAL` | `300` | Intervalo entre pings em segundos |
 
 ---
 

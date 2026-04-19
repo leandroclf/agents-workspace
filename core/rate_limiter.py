@@ -1,3 +1,6 @@
+# DEFERRED: not in production path — RateLimiter is defined but not instantiated
+# in any production module. Rate limiting is currently handled by RobustErrorHandler
+# (retry with exponential backoff). Activate by importing RateLimiter in claude_client.py.
 import time
 from collections import deque
 from threading import Lock

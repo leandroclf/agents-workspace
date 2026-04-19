@@ -1,56 +1,97 @@
-# Operações do Workspace
+# Operations Guide
 
-## Inicializar
-source ~/claude-workspace/activate_env.sh
-
-## Comandos principais
-python3 cli.py chat "sua pergunta"
-python3 cli.py chat "refatore main.py" --task-type code
-python3 cli.py orchestrate "tarefa complexa"
-python3 cli.py history --limit 20
-python3 cli.py stats
-
-## Rodar API REST
-python3 api/app.py
-# Acesso: http://localhost:5000/health
-
-## Rodar infraestrutura (PostgreSQL + Redis)
-docker-compose up -d postgres redis
-
-## Rodar testes
-pytest tests/ -v
-
-## Configuração
-cp .env.example .env
-# Editar .env e adicionar ANTHROPIC_API_KEY=sk-ant-...
-
-## Troubleshooting
-- API key inválida: verifique .env -> ANTHROPIC_API_KEY
-- SQLite lock: reinicie o processo
-- RateLimitError: o sistema retenta automaticamente com backoff exponencial
-- ModuleNotFoundError: ative o venv -> source venv/bin/activate
-
-## Usando com assinatura claude.ai (sem API key)
-
-O workspace detecta automaticamente o Claude Code CLI e usa sua assinatura.
-Não é necessário configurar ANTHROPIC_API_KEY.
+## Running the CLI
 
 ```bash
-# Verificar que o backend está configurado:
-grep BACKEND .env
-# Deve mostrar: BACKEND=claude-code
+source venv/bin/activate
 
-# Testar o backend diretamente:
-echo "Responda apenas: OK" | claude -p --output-format json --no-session-persistence | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['result'])"
+# Chat
+python cli.py chat "pergunta"
 
-# Usar o workspace normalmente:
-python3 cli.py chat "Olá, estou usando minha assinatura!"
+# Agents
+python cli.py proposal "Empresa XYZ" "saúde" "acelerar vendas" --orcamento "15k"
+python cli.py lead-report demo
+python cli.py lead-report '[{"empresa":"XYZ","pais":"BR","setor":"tech"}]'
+python cli.py risk "análise" --country BR
+python cli.py entity "consulta" --entity "Petrobras"
+python cli.py enrich "análise" --account "USP"
 ```
 
-## Usando com API key (billing por token)
+## Backend Selection
+
+| Env Var | Value | Behavior |
+|---|---|---|
+| BACKEND | claude-code | Claude CLI (primary) |
+| BACKEND | codex | Codex CLI |
+| BACKEND | api | Anthropic API key |
+| (unset) | — | Auto-detect: claude → codex → api |
+| FALLBACK_CHAIN_ENABLED | true | Enable fallback chain |
+
+## Keepalive (Render backends)
 
 ```bash
-# No .env:
-BACKEND=api
-ANTHROPIC_API_KEY=sk-ant-...
+# Start in background
+./scripts/keepalive.sh
+
+# Check log
+tail -f /tmp/lf-keepalive.log
+
+# Custom endpoints
+export KEEPALIVE_ENDPOINTS='[{"name":"MyAPI","url":"https://myapi/health"}]'
+export KEEPALIVE_INTERVAL=60  # seconds
+```
+
+## Running Tests
+
+```bash
+./venv/bin/pytest tests/ -q          # all tests
+./venv/bin/pytest tests/ -v -k codex # specific
+```
+
+## API Server
+
+```bash
+BACKEND=claude-code uvicorn api.app:app --reload
+```
+
+## Workflow Engine
+
+```bash
+python -c "from workflows.engine import WorkflowEngine; e = WorkflowEngine(); print(e)"
+```
+
+## Deferred Features
+
+### `observability/telemetry.py` — OpenTelemetry
+
+# DEFERRED: not in production path
+
+`telemetry.py` define `setup_telemetry()` com TracerProvider e MeterProvider via OpenTelemetry,
+mas **não é importado em nenhum módulo do projeto** (cli.py, api/app.py, core/*). A função
+`setup_telemetry()` é chamada apenas dentro do próprio arquivo em um bloco `if __name__ == "__main__"`
+(para testes manuais). Decisão: manter o arquivo para uso futuro, sem ativação automática.
+
+Para ativar:
+```python
+# Em cli.py ou api/app.py:
+from observability.telemetry import setup_telemetry
+setup_telemetry("claude-workspace")
+```
+
+### `core/rate_limiter.py` — RateLimiter
+
+# DEFERRED: not in production path
+
+`RateLimiter` é definido em `core/rate_limiter.py` com controle de janela deslizante e limite
+diário de custo, mas **não é importado nem instanciado em nenhum módulo de produção**. A proteção
+contra rate limit é feita pelo `RobustErrorHandler` (retry com backoff exponencial). Decisão:
+manter o arquivo para uso futuro, sem ativação automática.
+
+Para ativar:
+```python
+# Em core/claude_client.py ou core/claude_code_backend.py:
+from core.rate_limiter import RateLimiter
+limiter = RateLimiter(max_requests=60, window_seconds=60)
+if not limiter.check_and_consume():
+    raise RuntimeError("Rate limit exceeded")
 ```

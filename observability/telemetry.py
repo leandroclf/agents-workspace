@@ -1,3 +1,5 @@
+# DEFERRED: not in production path — setup_telemetry() is defined but not called
+# by cli.py or api/app.py. Activate by importing and calling setup_telemetry() at startup.
 import os
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
