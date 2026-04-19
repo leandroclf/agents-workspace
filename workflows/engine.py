@@ -2,7 +2,7 @@ import yaml
 import os
 from dataclasses import dataclass, field
 from typing import Any
-from core.claude_client import ClaudeClient, TaskType
+from core.claude_client import make_client, TaskType
 from core.memory_system import MemorySystem
 
 
@@ -26,7 +26,7 @@ class Workflow:
 class WorkflowEngine:
     def __init__(self, memory: MemorySystem = None, api_key: str = None):
         self.memory = memory or MemorySystem()
-        self.client = ClaudeClient(api_key=api_key, memory=self.memory)
+        self.client = make_client(memory=self.memory, api_key=api_key)
 
     def load(self, yaml_path: str) -> Workflow:
         with open(yaml_path) as f:

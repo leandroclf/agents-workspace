@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from core.claude_client import ClaudeClient, TaskType
+from core.claude_client import make_client, TaskType
 from core.memory_system import MemorySystem
 from core.skill_manager import SkillManager, Skill
 from core.error_handler import RobustErrorHandler
@@ -14,7 +14,7 @@ load_dotenv()
 app = Flask(__name__)
 memory = MemorySystem()
 skills = SkillManager()
-client = ClaudeClient(memory=memory)
+client = make_client(memory=memory)
 error_handler = RobustErrorHandler()
 
 
