@@ -1,0 +1,16 @@
+[Unit]
+Description=LF Soluções — Keep-alive para backends Render
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/leandro/claude-workspace
+ExecStart=/home/leandro/claude-workspace/venv/bin/python scripts/keepalive.py
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+Environment=KEEPALIVE_INTERVAL=300
+
+[Install]
+WantedBy=multi-user.target

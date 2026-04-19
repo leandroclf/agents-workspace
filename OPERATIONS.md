@@ -41,6 +41,36 @@ export KEEPALIVE_ENDPOINTS='[{"name":"MyAPI","url":"https://myapi/health"}]'
 export KEEPALIVE_INTERVAL=60  # seconds
 ```
 
+## Keepalive Deploy
+
+### Local mode
+
+```bash
+./scripts/keepalive.sh
+```
+
+### Systemd mode
+
+```bash
+sudo cp scripts/keepalive.service /etc/systemd/system/lf-keepalive.service
+sudo systemctl daemon-reload
+sudo systemctl enable lf-keepalive
+sudo systemctl start lf-keepalive
+```
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `KEEPALIVE_ENDPOINTS` | internal endpoints | JSON array `[{"name":"x","url":"..."}]` of URLs to ping |
+| `KEEPALIVE_INTERVAL` | `300` | Interval between pings in seconds |
+
+### Health check
+
+```bash
+systemctl status lf-keepalive
+```
+
 ## Running Tests
 
 ```bash
