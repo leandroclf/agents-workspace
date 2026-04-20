@@ -69,3 +69,10 @@ docker compose ps
 - Se `5432` estiver ocupada, ajustar o ambiente local antes de alterar o Compose.
 - O backend Codex lê `CODEX_MODEL` por execução, então mudanças em ambiente devem ser refletidas sem reiniciar o processo Python.
 - A suíte de testes deve permanecer verde após qualquer ajuste funcional.
+
+## Git E SSH
+
+- Este repositório deve usar o alias SSH `github-hotmail` para `origin`.
+- A URL esperada é `git@github-hotmail:leandroclf/agents-workspace.git`.
+- A identidade SSH correspondente é `~/.ssh/id_ed25519_hotmail`.
+- Antes de fazer push, confirmar `git remote -v` se houver qualquer dúvida sobre a conta usada.
