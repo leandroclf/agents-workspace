@@ -31,7 +31,7 @@ O **Agents Workspace** é um template de fundação para iniciar projetos com ag
 
 ### Resultado técnico
 
-- **110+ testes automatizados** passando (unitários + integração E2E)
+- **113 testes automatizados** passando (unitários + integração E2E)
 - **Zero dependência de API key** quando usando `BACKEND=claude-code`
 - **Sem shell injection** — todos os subprocessos usam array de argumentos
 - **Retrocompatível** — aceita `api_key=`, `oauth_token=` e o novo `backend=` na mesma interface
@@ -246,7 +246,7 @@ agents-workspace/
 │   └── engine.py                # Motor de workflows YAML
 ├── observability/
 │   └── telemetry.py             # OpenTelemetry (traces + métricas)
-├── tests/                       # 110+ testes pytest
+├── tests/                       # 113 testes pytest
 ├── cli.py                       # Entrypoint Click
 ├── authenticate.py              # Setup OAuth interativo
 ├── docker-compose.yml           # PostgreSQL + Redis
@@ -606,7 +606,7 @@ for step_name, output in results.items():
 ## Testes
 
 ```bash
-# Todos os testes (110+)
+# Todos os testes (113)
 venv/bin/pytest tests/ -v
 
 # Por módulo
