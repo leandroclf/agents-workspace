@@ -17,9 +17,6 @@ CODEX_MODEL_MAP = {
     "chat":          (None, "low"),
 }
 
-# Override with explicit model name if set (API key accounts support model selection)
-_CODEX_MODEL_OVERRIDE = os.environ.get("CODEX_MODEL")
-
 CLI_TIMEOUT = 180
 
 
@@ -43,7 +40,8 @@ class CodexBackend:
                  model: str = "chat", max_tokens: int = 4096) -> dict:
         task_key = model if model in CODEX_MODEL_MAP else "chat"
         _, effort = CODEX_MODEL_MAP[task_key]
-        codex_model = _CODEX_MODEL_OVERRIDE  # None unless explicitly set
+        # Read per call so test/process-level env changes are honored.
+        codex_model = os.environ.get("CODEX_MODEL")
 
         cmd = [self.codex_bin, "exec", "--json", "--skip-git-repo-check"]
         if codex_model:
