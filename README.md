@@ -701,7 +701,7 @@ python3 cli.py entity "consulta" --entity "Petrobras"
 python3 cli.py enrich "análise" --account "USP"
 
 # Ambiente
-source activate_env.sh                                  # Ativar venv + carregar .env
+source activate_env.sh                                  # Atalho opcional para venv + .env
 source venv/bin/activate                                # Ativar venv apenas
 
 # Testes
@@ -710,6 +710,7 @@ venv/bin/pytest tests/ -v                              # Suite completa (verbose
 
 # API
 python3 api/app.py                                     # Iniciar Flask na porta 5000
+curl http://localhost:5000/api/interactions?limit=5    # Consultar interações recentes
 
 # Infraestrutura (opcional)
 docker compose up -d                                   # Subir PostgreSQL + Redis
