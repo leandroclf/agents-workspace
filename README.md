@@ -122,6 +122,28 @@ python3 cli.py --help
 python3 cli.py stats
 ```
 
+### Inicialização rápida
+
+Depois de configurar o `.env`, use um comando único para subir a infraestrutura,
+compilar os servidores MCP e iniciar a API:
+
+```bash
+./scripts/dev-up.sh
+```
+
+Isso executa:
+
+```bash
+docker compose up -d
+npx tsc
+python api/app.py
+```
+
+Enquanto esse processo estiver rodando, a aplicação fica disponível em:
+
+- API: `http://localhost:5000`
+- Health: `http://localhost:5000/health`
+
 ---
 
 ## Configuração de backend
@@ -167,6 +189,10 @@ Quando `FALLBACK_CHAIN_ENABLED=true`, o workspace tenta backends em cascata ao a
 ```
 claude-code → codex → api
 ```
+
+Esse fallback é acionado quando o backend primário responde com `BackendLimitError`.
+Se o `claude` CLI não estiver presente no `PATH`, o backend principal falha antes da
+cadeia de fallback ser montada.
 
 ```bash
 # No .env:
