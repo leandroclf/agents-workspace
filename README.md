@@ -499,9 +499,9 @@ curl -X POST http://localhost:5000/api/skills \
 curl http://localhost:5000/api/skills
 ```
 
-#### `GET /api/history?limit=10`
+#### `GET /api/interactions?limit=10`
 ```bash
-curl "http://localhost:5000/api/history?limit=5"
+curl "http://localhost:5000/api/interactions?limit=5"
 ```
 
 ---
@@ -544,6 +544,23 @@ mgr.start_server('git', 'node dist/mcp/servers/git-server.js')
 ### `filesystem-server` — Leitura de arquivos
 
 Expõe ferramentas de leitura segura do filesystem via protocolo MCP.
+
+```bash
+# Executar diretamente
+WORKSPACE_ROOT="$(pwd)" node dist/mcp/servers/filesystem-server.js
+
+# Usar via MCPManager
+python3 -c "
+from api.mcp_manager import MCPManager
+mgr = MCPManager.default_workspace_manager(workspace_root='$(pwd)')
+mgr.start_all()
+print(mgr.is_running('filesystem'))
+print(mgr.is_running('git'))
+mgr.stop_all()
+"
+```
+
+**Segurança:** o servidor bloqueia path traversal fora de `WORKSPACE_ROOT`.
 
 ---
 
