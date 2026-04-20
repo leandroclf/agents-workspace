@@ -98,7 +98,7 @@ claude login             # autenticar com conta claude.ai
 
 ```bash
 # 1. Clonar o repositório
-git clone git@github.com:leandroclf/agents-workspace.git
+git clone git@github-hotmail:leandroclf/agents-workspace.git
 cd agents-workspace
 
 # 2. Criar e ativar o virtualenv
@@ -712,8 +712,8 @@ venv/bin/pytest tests/ -v                              # Suite completa (verbose
 python3 api/app.py                                     # Iniciar Flask na porta 5000
 
 # Infraestrutura (opcional)
-docker-compose up -d postgres redis                    # Subir PostgreSQL + Redis
-docker-compose down                                    # Parar infraestrutura
+docker compose up -d                                   # Subir PostgreSQL + Redis
+docker compose down                                    # Parar infraestrutura
 
 # MCP
 npx tsc                                                # Compilar TypeScript
