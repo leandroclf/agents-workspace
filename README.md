@@ -726,34 +726,20 @@ node dist/mcp/servers/git-server.js                   # Iniciar MCP git server
 
 Esta seção descreve como outro agente (Claude Code, GPT, Gemini, etc.) deve interagir com este workspace.
 
-### Setup em um ambiente limpo
+### Bootstrap recomendado
+
+Consulte o checklist em [`docs/bootstrap-checklist.md`](docs/bootstrap-checklist.md).
+Ele concentra o fluxo de clone, instalação, configuração, infraestrutura local, validação da API, CLI, MCP e testes.
+
+### Smoke test mínimo
+
+Depois do bootstrap, valide um backend explícito:
 
 ```bash
-# 1. Clonar
-git clone git@github.com:leandroclf/agents-workspace.git
-cd agents-workspace
-
-# 2. Instalar
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-
-# 3. Verificar que claude CLI está disponível e autenticado
-claude whoami       # deve retornar o usuário logado
-
-# 4. Configurar backend
-echo "BACKEND=claude-code" > .env
-
-# 5. Smoke test
-python3 -c "
-import os; os.environ['BACKEND'] = 'claude-code'
-from core.claude_client import make_client
-client = make_client()
-r = client.chat('Responda apenas: OK')
-print('Backend:', type(client._backend).__name__)
-print('Resposta:', r['text'])
-"
-# Esperado: Backend: ClaudeCodeBackend / Resposta: OK
+. venv/bin/activate && BACKEND=codex python cli.py chat "Responda apenas OK." --task-type chat
 ```
+
+Se preferir `claude-code`, use o backend correspondente e confirme que `claude` está autenticado.
 
 ### Como extender o sistema
 
@@ -778,16 +764,16 @@ skills.save_skill(Skill(
 ))
 ```
 
-**Usar o ClaudeClient diretamente como backend de outro sistema:**
+**Usar o `ClaudeClient` diretamente como backend de outro sistema:**
 
 ```python
-from core.claude_client import make_client, TaskType
+from core.claude_client import ClaudeClient, make_client, TaskType
 
 client = make_client()  # auto-detect: CLI ou API key
 
 # Passagem de backend explícito para testes
 from core.claude_code_backend import ClaudeCodeBackend
-backend = ClaudeCodeBackend(claude_bin="claude")
+backend = ClaudeCodeBackend()
 client = ClaudeClient(backend=backend)
 
 # Interface completa
