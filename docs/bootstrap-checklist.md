@@ -5,7 +5,7 @@ Use este checklist para colocar um clone novo do `agents-workspace` em funcionam
 ## 1. Preparar o ambiente
 
 ```bash
-git clone git@github.com:leandroclf/agents-workspace.git
+git clone git@github-hotmail:leandroclf/agents-workspace.git
 cd agents-workspace
 python3 -m venv venv
 . venv/bin/activate
@@ -40,7 +40,7 @@ docker compose ps
 ## 5. Validar a API
 
 ```bash
-python3 api/app.py
+. venv/bin/activate && python3 api/app.py
 curl http://localhost:5000/health
 curl http://localhost:5000/api/stats
 ```
