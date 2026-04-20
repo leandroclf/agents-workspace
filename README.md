@@ -727,6 +727,28 @@ node dist/mcp/servers/git-server.js                   # Iniciar MCP git server
 
 Esta seção descreve como outro agente (Claude Code, GPT, Gemini, etc.) deve interagir com este workspace.
 
+### Prompt de bootstrap curto
+
+```text
+Você está assumindo um novo projeto baseado no workspace agents-workspace.
+
+Projeto: [nome/URL]
+Objetivo: [1-3 frases]
+Stack: [tecnologias principais]
+Estado atual: [novo / legado / em manutenção]
+Restrições: [padrões, prazo, compatibilidade, dependências]
+O que já existe: [arquivos, módulos, serviços, endpoints]
+O que fazer agora: [primeira entrega]
+
+Regras:
+1. Leia a estrutura do projeto e o `AGENTS.md` local antes de agir.
+2. Entenda o contexto antes de escrever código.
+3. Prefira passos pequenos, verificáveis e seguros.
+4. Siga o `AGENTS.md` local se houver conflito com instruções globais.
+5. Ao editar, explique objetivamente o plano e valide com testes.
+6. Responda em português brasileiro.
+```
+
 ### Bootstrap recomendado
 
 Consulte o checklist em [`docs/bootstrap-checklist.md`](docs/bootstrap-checklist.md).
