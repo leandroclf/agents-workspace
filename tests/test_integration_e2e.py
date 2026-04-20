@@ -41,8 +41,10 @@ def test_full_chat_flow(mock_anthropic_cls, tmp_path):
 
 
 @patch("anthropic.Anthropic")
-def test_skill_injection_flow(mock_anthropic_cls, tmp_path):
+def test_skill_injection_flow(mock_anthropic_cls, tmp_path, monkeypatch):
     """Skills relevantes devem ser injetadas no system prompt."""
+    # Force API backend so anthropic.Anthropic mock is actually used
+    monkeypatch.setenv("BACKEND", "api")
     from core.agents.coder_agent import CoderAgent
     from core.memory_system import MemorySystem
     from core.skill_manager import SkillManager, Skill

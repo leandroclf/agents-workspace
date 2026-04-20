@@ -51,7 +51,8 @@ def test_complete_returns_text(mock_run):
 
 
 @patch("subprocess.run")
-def test_correct_model_selected_by_task_key(mock_run):
+def test_correct_model_selected_by_task_key(mock_run, monkeypatch):
+    monkeypatch.delenv("CODEX_MODEL", raising=False)
     mock_run.return_value = MagicMock(
         returncode=0, stdout=_make_jsonl(), stderr=""
     )
@@ -73,6 +74,23 @@ def test_system_prompt_passed_as_config_flag(mock_run):
     cmd = mock_run.call_args[0][0]
     system_configs = [cmd[i + 1] for i, v in enumerate(cmd) if v == "-c"]
     assert any("system.prompt" in c for c in system_configs)
+
+
+@patch("subprocess.run")
+def test_codex_model_override_is_used_when_set(mock_run, monkeypatch):
+    monkeypatch.setenv("CODEX_MODEL", "gpt-5.4-mini")
+    mock_run.return_value = MagicMock(
+        returncode=0,
+        stdout=_make_jsonl(),
+        stderr=""
+    )
+    backend = CodexBackend()
+    result = backend.complete(prompt="tarefa", model="code")
+    cmd = mock_run.call_args[0][0]
+    assert "-m" in cmd
+    idx = cmd.index("-m")
+    assert cmd[idx + 1] == "gpt-5.4-mini"
+    assert result["model"] == "gpt-5.4-mini"
 
 
 @patch("subprocess.run")

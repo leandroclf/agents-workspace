@@ -580,7 +580,7 @@ for step_name, output in results.items():
 ## Testes
 
 ```bash
-# Todos os testes (90+)
+# Todos os testes (110+)
 venv/bin/pytest tests/ -v
 
 # Por módulo
