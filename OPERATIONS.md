@@ -1,5 +1,9 @@
 # Operations Guide
 
+Guia operacional do `agents-workspace`, um template reutilizável para iniciar
+novos projetos com backend abstrato, memória persistente, orquestração,
+CLI, API e workflows declarativos.
+
 ## Running the CLI
 
 ```bash
@@ -8,7 +12,7 @@ source venv/bin/activate
 # Chat
 python cli.py chat "pergunta"
 
-# Agents
+# Example agents included in this base
 python cli.py proposal "Empresa XYZ" "saúde" "acelerar vendas" --orcamento "15k"
 python cli.py lead-report demo
 python cli.py lead-report '[{"empresa":"XYZ","pais":"BR","setor":"tech"}]'
@@ -17,10 +21,31 @@ python cli.py entity "consulta" --entity "Petrobras"
 python cli.py enrich "análise" --account "USP"
 ```
 
-## Proposal Agent
+## Starting a new project from this base
 
 ```bash
-# Diretório de propostas (padrão: ~/propostas)
+# 1. Clone the template
+git clone git@github.com:leandroclf/agents-workspace.git
+cd agents-workspace
+
+# 2. Create an isolated branch for the new project
+git checkout -b feature/<new-project-name>
+
+# 3. Copy and edit the environment file
+cp .env.example .env
+
+# 4. Replace example agents and docs with the new domain
+#    - keep the runtime pieces you need
+#    - remove or rewrite sample agents you do not need
+
+# 5. Run the test suite before making the repo your own
+./venv/bin/pytest tests/ -q
+```
+
+## Proposal Agent example
+
+```bash
+# Diretório de propostas do ProposalAgent de exemplo (padrão: ~/propostas)
 export PROPOSALS_DIR=/custom/path
 python cli.py proposal "Empresa" "setor" "objetivo"
 ```
@@ -29,20 +54,20 @@ python cli.py proposal "Empresa" "setor" "objetivo"
 
 | Env Var | Value | Behavior |
 |---|---|---|
-| BACKEND | claude-code | Claude CLI (primary) |
+| BACKEND | claude-code | Claude Code CLI (primary) |
 | BACKEND | codex | Codex CLI |
 | BACKEND | api | Anthropic API key |
 | (unset) | — | Auto-detect: claude → codex → api |
 | FALLBACK_CHAIN_ENABLED | true | Enable fallback chain |
 
-## Keepalive (Render backends)
+## Keepalive (remote backends)
 
 ```bash
 # Start in background
 ./scripts/keepalive.sh
 
 # Check log
-tail -f /tmp/lf-keepalive.log
+tail -f /tmp/agents-workspace-keepalive.log
 
 # Custom endpoints
 export KEEPALIVE_ENDPOINTS='[{"name":"MyAPI","url":"https://myapi/health"}]'
@@ -60,10 +85,10 @@ export KEEPALIVE_INTERVAL=60  # seconds
 ### Systemd mode
 
 ```bash
-sudo cp scripts/keepalive.service /etc/systemd/system/lf-keepalive.service
+sudo cp scripts/keepalive.service /etc/systemd/system/agents-workspace-keepalive.service
 sudo systemctl daemon-reload
-sudo systemctl enable lf-keepalive
-sudo systemctl start lf-keepalive
+sudo systemctl enable agents-workspace-keepalive
+sudo systemctl start agents-workspace-keepalive
 ```
 
 ### Environment variables
@@ -76,7 +101,7 @@ sudo systemctl start lf-keepalive
 ### Health check
 
 ```bash
-systemctl status lf-keepalive
+systemctl status agents-workspace-keepalive
 ```
 
 ## Running Tests
@@ -113,7 +138,7 @@ Para ativar:
 ```python
 # Em cli.py ou api/app.py:
 from observability.telemetry import setup_telemetry
-setup_telemetry("claude-workspace")
+setup_telemetry("agents-workspace")
 ```
 
 ### `core/rate_limiter.py` — RateLimiter

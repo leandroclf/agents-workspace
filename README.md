@@ -1,20 +1,24 @@
-# Claude Workspace 2026
+# Agents Workspace
 
-> **Workspace inteligente com Claude** — sistema multi-agente com roteamento automático de modelos, memória persistente, servidor MCP, REST API e integração com assinatura claude.ai (sem custo adicional de API key).
+> **Base reutilizável para novos projetos com agentes** — sistema multi-agente com backend abstrato, memória persistente, servidores MCP, REST API, CLI e workflows declarativos.
 
 ---
 
-## Relatório Executivo
+## Visão Geral
 
 ### Contexto
 
-O **Claude Workspace 2026** é uma plataforma de automação inteligente construída sobre os modelos Claude da Anthropic. O projeto resolve um problema prático e de alto impacto: **permitir que desenvolvedores e agentes autônomos usem os modelos Claude de forma programática, sem incorrer em custos adicionais de API key**, aproveitando uma assinatura Claude Max/Pro existente via Claude Code CLI.
+O **Agents Workspace** é um template de fundação para iniciar projetos com agentes. A ideia é separar o que é infraestrutura genérica do que é regra de negócio específica:
+
+- infraestrutura reutilizável: backend, memória, skills, orquestração, CLI, API e workflows;
+- exemplos de domínio: agentes prontos para demonstração ou adaptação rápida;
+- objetivo: começar um projeto novo sem reconstruir o runtime do zero.
 
 ### O que foi construído
 
 | Componente | Descrição |
 |---|---|
-| **Backend dual** | Usa Claude Code CLI (assinatura) ou API Anthropic direta, com detecção automática |
+| **Backend abstraction** | Usa Claude Code CLI, Codex CLI ou API Anthropic direta, com detecção automática |
 | **Roteamento de modelos** | Opus 4.7 para código/análise, Sonnet 4.6 para validação, Haiku 4.5 para chat |
 | **Sistema multi-agente** | OrchestratorAgent decompõe tarefas e despacha para agentes especializados em paralelo |
 | **Memória persistente** | SQLite com histórico de interações, skills aprendidas e contexto de projeto |
@@ -31,11 +35,16 @@ O **Claude Workspace 2026** é uma plataforma de automação inteligente constru
 - **Zero dependência de API key** quando usando `BACKEND=claude-code`
 - **Sem shell injection** — todos os subprocessos usam array de argumentos
 - **Retrocompatível** — aceita `api_key=`, `oauth_token=` e o novo `backend=` na mesma interface
-- Versionado em `v2.1.0`, branch `main`, repositório `leandroclf/claude-workspace`
+- Pronto para ser clonado e adaptado a novos projetos
 
 ### Decisão de arquitetura principal
 
-A autenticação via OAuth do claude.ai foi investigada e descartada: a assinatura claude.ai **não concede acesso à API Anthropic** — são produtos separados. A solução adotada foi usar o **Claude Code CLI como subprocess backend**: o CLI usa as credenciais da sessão instalada, aceita entrada via stdin e retorna JSON estruturado, expondo exatamente a interface necessária sem billing adicional.
+A arquitetura isola a escolha de backend do restante do sistema. Isso permite usar o mesmo runtime com:
+
+- `claude-code` quando houver Claude Code CLI disponível;
+- `codex` quando o projeto quiser validar fluxos com o modelo Codex via CLI;
+- `api` quando a integração direta com Anthropic fizer sentido;
+- fallback automático entre backends quando configurado.
 
 ---
 
@@ -89,8 +98,8 @@ claude login             # autenticar com conta claude.ai
 
 ```bash
 # 1. Clonar o repositório
-git clone git@github.com:leandroclf/claude-workspace.git
-cd claude-workspace
+git clone git@github.com:leandroclf/agents-workspace.git
+cd agents-workspace
 
 # 2. Criar e ativar o virtualenv
 python3 -m venv venv
@@ -115,17 +124,17 @@ python3 cli.py stats
 
 ---
 
-## Configuração de autenticação
+## Configuração de backend
 
-O workspace suporta dois modos de autenticação. **Modo 1 (recomendado)** não gera cobrança adicional.
+O workspace suporta três modos principais de backend, com fallback opcional.
 
-### Modo 1: Claude Code CLI — usa assinatura claude.ai
+### Modo 1: Claude Code CLI
 
 ```bash
 # No .env:
 BACKEND=claude-code
 
-# Verificar que o CLI está autenticado:
+# Verificar que o CLI está disponível:
 claude whoami
 
 # Testar o backend diretamente:
@@ -133,22 +142,22 @@ echo "Responda: OK" | claude -p --output-format json --no-session-persistence \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['result'])"
 ```
 
-O workspace detecta automaticamente o `claude` no PATH e usa a sessão autenticada. Nenhuma chave de API é necessária.
+O workspace detecta automaticamente o `claude` no PATH. Nenhuma chave de API é necessária.
 
-### Modo 2: API Anthropic direta — billing por token
+### Modo 2: Codex CLI
+
+```bash
+# No .env:
+BACKEND=codex
+CODEX_MODEL=gpt-5.4-mini
+```
+
+### Modo 3: API Anthropic direta
 
 ```bash
 # No .env:
 BACKEND=api
 ANTHROPIC_API_KEY=sk-ant-...
-```
-
-### Modo 3: Codex CLI — OpenAI Codex via CLI
-
-```bash
-# No .env:
-BACKEND=codex
-CODEX_MODEL=gpt-5.4-mini   # modelo Codex a usar
 ```
 
 ### Fallback chain automático
@@ -210,7 +219,7 @@ Exemplo de saída do `chat`:
 ## Arquitetura
 
 ```
-claude-workspace/
+agents-workspace/
 ├── core/
 │   ├── claude_code_backend.py   # Backend subprocess do claude CLI
 │   ├── claude_client.py         # ClaudeClient + make_client() factory + roteamento
@@ -409,7 +418,7 @@ print(result["total_tokens"])     # tokens totais consumidos
 python3 cli.py orchestrate "Analise o repositório e gere um relatório de qualidade de código"
 ```
 
-**Agentes disponíveis:**
+**Agentes de referência incluídos no template:**
 
 | Agente | `task_type` | Modelo | Especialidade |
 |---|---|---|---|
@@ -420,8 +429,8 @@ python3 cli.py orchestrate "Analise o repositório e gere um relatório de quali
 | `WorldBankRiskAgent` | `analysis` | Opus 4.7 | Dados de risco soberano via World Bank |
 | `WikidataEntityAgent` | `analysis` | Opus 4.7 | Resolução de entidades via Wikidata |
 | `OpenAlexEnrichmentAgent` | `analysis` | Opus 4.7 | Enriquecimento de leads via OpenAlex |
-| `ProposalAgent` | `analysis` | Opus 4.7 | Geração de propostas comerciais |
-| `LeadReportAgent` | `analysis` | Opus 4.7 | Relatórios de leads com enriquecimento |
+| `ProposalAgent` | `orchestration` | Opus 4.7 | Geração de propostas comerciais de exemplo |
+| `LeadReportAgent` | `analysis` | Opus 4.7 | Relatórios executivos de leads de exemplo |
 
 ### Criar um agente customizado
 
@@ -650,7 +659,7 @@ Arquivo: `.env` (copiar de `.env.example`)
 | `DAILY_COST_LIMIT_USD` | `50.0` | Limite diário de custo (modo API) |
 | `KEEPALIVE_ENDPOINTS` | endpoints internos | JSON array `[{"name":"x","url":"..."}]` |
 | `KEEPALIVE_INTERVAL` | `300` | Intervalo keepalive em segundos |
-| `PROPOSALS_DIR` | `~/propostas` | Diretório de saída das propostas; padrão `~/propostas`, sobrepor com `PROPOSALS_DIR=/custom/path` |
+| `PROPOSALS_DIR` | `~/propostas` | Diretório de saída do `ProposalAgent` de exemplo; sobrepor com `PROPOSALS_DIR=/custom/path` |
 
 ---
 
@@ -704,8 +713,8 @@ Esta seção descreve como outro agente (Claude Code, GPT, Gemini, etc.) deve in
 
 ```bash
 # 1. Clonar
-git clone git@github.com:leandroclf/claude-workspace.git
-cd claude-workspace
+git clone git@github.com:leandroclf/agents-workspace.git
+cd agents-workspace
 
 # 2. Instalar
 python3 -m venv venv && source venv/bin/activate
@@ -800,17 +809,17 @@ client = make_client()
 
 ---
 
-## Keepalive (Render e backends remotos)
+## Keepalive (backends remotos)
 
 O script `scripts/keepalive.sh` mantém backends remotos ativos com pings periódicos (útil no Render free tier que hiberna após inatividade).
 
 ```bash
 # Iniciar em background
 ./scripts/keepalive.sh
-# Log em: /tmp/lf-keepalive.log
+# Log em: /tmp/agents-workspace-keepalive.log
 
 # Acompanhar log
-tail -f /tmp/lf-keepalive.log
+tail -f /tmp/agents-workspace-keepalive.log
 
 # Configurar endpoints personalizados (JSON)
 export KEEPALIVE_ENDPOINTS='[{"name":"MyAPI","url":"https://myapi.onrender.com/health"}]'
