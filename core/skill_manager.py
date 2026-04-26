@@ -1,5 +1,6 @@
 import sqlite3
 import json
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -28,11 +29,14 @@ class SkillManager:
     def __init__(self, db_path: str = "memory/workspace.db"):
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self.db_path = db_path
+        self._write_lock = threading.RLock()
         self._init_schema()
 
     def _conn(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=30.0, check_same_thread=False)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA busy_timeout = 30000")
+        conn.execute("PRAGMA journal_mode = WAL")
         return conn
 
     def _init_schema(self):
@@ -64,19 +68,20 @@ class SkillManager:
         )
 
     def save_skill(self, skill: Skill):
-        with self._conn() as conn:
-            conn.execute(
-                """INSERT INTO skills (name, description, prompt_template, tags, success_rate)
-                   VALUES (?, ?, ?, ?, ?)
-                   ON CONFLICT(name) DO UPDATE SET
-                   description = excluded.description,
-                   prompt_template = excluded.prompt_template,
-                   tags = excluded.tags,
-                   success_rate = excluded.success_rate,
-                   updated_at = CURRENT_TIMESTAMP""",
-                (skill.name, skill.description, skill.prompt_template,
-                 json.dumps(skill.tags), skill.success_rate)
-            )
+        with self._write_lock:
+            with self._conn() as conn:
+                conn.execute(
+                    """INSERT INTO skills (name, description, prompt_template, tags, success_rate)
+                       VALUES (?, ?, ?, ?, ?)
+                       ON CONFLICT(name) DO UPDATE SET
+                       description = excluded.description,
+                       prompt_template = excluded.prompt_template,
+                       tags = excluded.tags,
+                       success_rate = excluded.success_rate,
+                       updated_at = CURRENT_TIMESTAMP""",
+                    (skill.name, skill.description, skill.prompt_template,
+                     json.dumps(skill.tags), skill.success_rate)
+                )
 
     def get_skill(self, name: str) -> Optional[Skill]:
         with self._conn() as conn:
@@ -105,12 +110,13 @@ class SkillManager:
             return
         new_rate = skill.success_rate + alpha * (1.0 if success else -1.0)
         new_rate = max(0.0, min(1.0, new_rate))
-        with self._conn() as conn:
-            conn.execute(
-                """UPDATE skills SET success_rate = ?, usage_count = usage_count + 1,
-                   updated_at = CURRENT_TIMESTAMP WHERE name = ?""",
-                (new_rate, name)
-            )
+        with self._write_lock:
+            with self._conn() as conn:
+                conn.execute(
+                    """UPDATE skills SET success_rate = ?, usage_count = usage_count + 1,
+                       updated_at = CURRENT_TIMESTAMP WHERE name = ?""",
+                    (new_rate, name)
+                )
 
     def build_skill_injection_text(self, query: str, top_k: int = 3) -> str:
         skills = self.find_relevant(query=query, top_k=top_k)

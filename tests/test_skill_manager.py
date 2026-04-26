@@ -1,6 +1,7 @@
 import pytest
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from core.skill_manager import SkillManager, Skill
 
@@ -44,3 +45,15 @@ def test_build_system_prompt_injection(manager):
     prompt = manager.build_skill_injection_text(query="pattern", top_k=1)
     assert "tip" in prompt
     assert "tip desc" in prompt
+
+
+def test_concurrent_skill_writes_do_not_lock(tmp_path):
+    manager = SkillManager(db_path=str(tmp_path / "skills_parallel.db"))
+
+    def write_one(i):
+        manager.save_skill(Skill(f"skill_{i}", "desc", "template"))
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(write_one, range(40)))
+
+    assert len(manager.list_skills()) == 40

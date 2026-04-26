@@ -31,7 +31,7 @@ O **Agents Workspace** é um template de fundação para iniciar projetos com ag
 
 ### Resultado técnico
 
-- **113 testes automatizados** passando (unitários + integração E2E)
+- **124 testes automatizados** passando (unitários + integração E2E)
 - **Zero dependência de API key** quando usando `BACKEND=claude-code`
 - **Sem shell injection** — todos os subprocessos usam array de argumentos
 - **Retrocompatível** — aceita `api_key=`, `oauth_token=` e o novo `backend=` na mesma interface
@@ -272,7 +272,7 @@ agents-workspace/
 │   └── engine.py                # Motor de workflows YAML
 ├── observability/
 │   └── telemetry.py             # OpenTelemetry (traces + métricas)
-├── tests/                       # 113 testes pytest
+├── tests/                       # 124 testes pytest
 ├── cli.py                       # Entrypoint Click
 ├── authenticate.py              # Setup OAuth interativo
 ├── docker-compose.yml           # PostgreSQL + Redis
@@ -621,10 +621,10 @@ from core.memory_system import MemorySystem
 
 engine = WorkflowEngine(memory=MemorySystem())
 workflow = engine.load("workflows/examples/daily_standup.yaml")
-results = engine.run(workflow)
+results = engine.execute(workflow)
 
-for step_name, output in results.items():
-    print(f"[{step_name}]", output.get("text", ""))
+for step_name, output in results["outputs"].items():
+    print(f"[{step_name}]", output)
 ```
 
 ---
@@ -632,25 +632,25 @@ for step_name, output in results.items():
 ## Testes
 
 ```bash
-# Todos os testes (113)
-venv/bin/pytest tests/ -v
+# Todos os testes (124)
+python -m pytest -q -s
 
 # Por módulo
-venv/bin/pytest tests/test_claude_code_backend.py -v   # 7 testes — ClaudeCodeBackend
-venv/bin/pytest tests/test_claude_client.py -v         # 7 testes — ClaudeClient
-venv/bin/pytest tests/test_claude_client_backend.py -v # 6 testes — make_client + backend
-venv/bin/pytest tests/test_memory_system.py -v         # 6 testes — MemorySystem
-venv/bin/pytest tests/test_skill_manager.py -v         # 5 testes — SkillManager
-venv/bin/pytest tests/test_agents.py -v                # 4 testes — Agentes especializados
-venv/bin/pytest tests/test_orchestrator.py -v          # 2 testes — OrchestratorAgent
-venv/bin/pytest tests/test_integration_e2e.py -v       # 3 testes — E2E com mock de backend
-venv/bin/pytest tests/test_error_handler.py -v         # 4 testes — Retry + backoff
-venv/bin/pytest tests/test_oauth_manager.py -v         # 5 testes — OAuthManager
-venv/bin/pytest tests/test_mcp_servers.py -v           # 4 testes — MCP servers
+python -m pytest tests/test_claude_code_backend.py -v
+python -m pytest tests/test_claude_client.py -v
+python -m pytest tests/test_claude_client_backend.py -v
+python -m pytest tests/test_memory_system.py -v
+python -m pytest tests/test_skill_manager.py -v
+python -m pytest tests/test_agents.py -v
+python -m pytest tests/test_orchestrator.py -v
+python -m pytest tests/test_integration_e2e.py -v
+python -m pytest tests/test_api_app.py -v
+python -m pytest tests/test_workflow_engine.py -v
+python -m pytest tests/test_mcp_servers.py -v
 
 # Com cobertura (requer pytest-cov)
 pip install pytest-cov
-venv/bin/pytest tests/ --cov=core --cov-report=term-missing
+python -m pytest tests/ --cov=core --cov-report=term-missing
 ```
 
 **Padrão de mock usado nos testes de integração:**
@@ -731,8 +731,8 @@ source activate_env.sh                                  # Atalho opcional para v
 source venv/bin/activate                                # Ativar venv apenas
 
 # Testes
-venv/bin/pytest tests/ -q                              # Suite completa (rápido)
-venv/bin/pytest tests/ -v                              # Suite completa (verbose)
+python -m pytest -q -s                                 # Suite completa (rápido)
+python -m pytest tests/ -v                             # Suite completa (verbose)
 
 # API
 python3 api/app.py                                     # Iniciar Flask na porta 5000

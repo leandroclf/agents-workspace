@@ -7,11 +7,38 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 
-const ALLOWED_ROOT = process.env.WORKSPACE_ROOT || process.cwd();
+const ALLOWED_ROOT = fs.realpathSync.native(
+  path.resolve(process.env.WORKSPACE_ROOT || process.cwd())
+);
+
+function isInsideAllowedRoot(resolvedPath: string): boolean {
+  const relative = path.relative(ALLOWED_ROOT, resolvedPath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function nearestExistingParent(startPath: string): string {
+  let current = startPath;
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) {
+      throw new Error(`No existing parent found for: ${startPath}`);
+    }
+    current = parent;
+  }
+  return fs.realpathSync.native(current);
+}
 
 function safePath(filePath: string): string {
-  const resolved = path.resolve(filePath);
-  if (!resolved.startsWith(ALLOWED_ROOT)) {
+  const resolved = path.resolve(ALLOWED_ROOT, filePath);
+  let checkPath: string;
+
+  try {
+    checkPath = fs.realpathSync.native(resolved);
+  } catch {
+    checkPath = nearestExistingParent(path.dirname(resolved));
+  }
+
+  if (!isInsideAllowedRoot(checkPath)) {
     throw new Error(`Path traversal blocked: ${filePath}`);
   }
   return resolved;

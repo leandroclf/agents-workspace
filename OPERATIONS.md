@@ -39,7 +39,7 @@ cp .env.example .env
 #    - remove or rewrite sample agents you do not need
 
 # 5. Run the test suite before making the repo your own
-./venv/bin/pytest tests/ -q
+python -m pytest -q -s
 ```
 
 ## Proposal Agent example
@@ -107,8 +107,8 @@ systemctl status agents-workspace-keepalive
 ## Running Tests
 
 ```bash
-./venv/bin/pytest tests/ -q          # all tests
-./venv/bin/pytest tests/ -v -k codex # specific
+python -m pytest -q -s          # all tests
+python -m pytest tests/ -v -k codex # specific
 ```
 
 ## API Server

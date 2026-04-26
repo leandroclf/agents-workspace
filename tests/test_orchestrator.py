@@ -1,6 +1,7 @@
 import pytest
 import sys
 import os
+from unittest.mock import MagicMock
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from core.agents.orchestrator_agent import OrchestratorAgent, TaskPlan, SubTask
 
@@ -27,3 +28,32 @@ def test_orchestrator_class_attributes():
     assert orch.__class__.name == "OrchestratorAgent"
     assert orch.__class__.model == "claude-opus-4-7"
     assert orch.__class__.task_type == "orchestration"
+
+
+def test_execute_subtask_passes_dependency_context(monkeypatch):
+    captured = {}
+
+    class RecorderAgent:
+        def __init__(self, memory=None, skill_manager=None):
+            pass
+
+        def run(self, task="", **kwargs):
+            captured["task"] = task
+            return {"text": "ok", "input_tokens": 0, "output_tokens": 0}
+
+    monkeypatch.setitem(
+        __import__("core.agents.orchestrator_agent", fromlist=["AGENT_MAP"]).AGENT_MAP,
+        "recorder",
+        RecorderAgent,
+    )
+    orch = OrchestratorAgent.__new__(OrchestratorAgent)
+    orch.memory = MagicMock()
+    orch.skill_manager = MagicMock()
+
+    result = orch._execute_subtask(
+        SubTask(id="2", description="usar resultado anterior", agent_type="recorder"),
+        context="resultado da etapa 1",
+    )
+
+    assert result["text"] == "ok"
+    assert "resultado da etapa 1" in captured["task"]

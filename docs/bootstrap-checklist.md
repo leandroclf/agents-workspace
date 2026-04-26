@@ -63,7 +63,7 @@ node dist/mcp/servers/git-server.js
 ## 8. Rodar testes
 
 ```bash
-pytest -q
+python -m pytest -q -s
 ```
 
 ## 9. Conferir Git

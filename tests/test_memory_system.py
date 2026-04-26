@@ -1,6 +1,7 @@
 import pytest
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from core.memory_system import MemorySystem
 
@@ -56,3 +57,15 @@ def test_save_project_context(memory):
     ctx = memory.get_project_context("proj_1")
     assert ctx["project_name"] == "MyApp"
     assert "Python" in ctx["tech_stack"]
+
+
+def test_concurrent_interaction_writes_do_not_lock(tmp_path):
+    memory = MemorySystem(db_path=str(tmp_path / "parallel.db"))
+
+    def write_one(i):
+        memory.save_interaction(f"msg {i}", f"resp {i}", "chat", "sonnet", 1)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(write_one, range(40)))
+
+    assert len(memory.get_recent_interactions(limit=100)) == 40

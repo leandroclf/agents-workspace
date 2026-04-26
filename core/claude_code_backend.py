@@ -10,6 +10,13 @@ MODEL_ALIASES = {
     "opus":   "opus",
     "sonnet": "sonnet",
     "haiku":  "haiku",
+    "code":          "opus",
+    "analysis":      "opus",
+    "architecture":  "opus",
+    "orchestration": "opus",
+    "validation":    "sonnet",
+    "summary":       "sonnet",
+    "chat":          "haiku",
 }
 
 CLI_TIMEOUT = 120

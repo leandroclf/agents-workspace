@@ -22,3 +22,9 @@ def test_mcp_manager_default_workspace():
     mgr = MCPManager.default_workspace_manager("/tmp/test")
     assert "filesystem" in mgr.servers
     assert "git" in mgr.servers
+
+def test_filesystem_server_uses_relative_root_guard():
+    source = open("mcp/servers/filesystem-server.ts", encoding="utf-8").read()
+    assert "path.relative(ALLOWED_ROOT" in source
+    assert "startsWith(ALLOWED_ROOT)" not in source
+    assert "fs.realpathSync.native" in source

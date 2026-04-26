@@ -1,6 +1,7 @@
 import pytest
 import os
 import sys
+import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from unittest.mock import patch, MagicMock
 from core.claude_client import ClaudeClient, TaskType, make_client
@@ -88,3 +89,27 @@ def test_chat_saves_interaction_to_memory(tmp_path):
     interactions = memory.get_recent_interactions(limit=1)
     assert len(interactions) == 1
     assert "minha pergunta" in interactions[0]["user_message"]
+
+
+@patch("subprocess.run")
+def test_fallback_chain_routes_code_task_to_claude_opus(mock_run, tmp_path):
+    from core.fallback_backend import FallbackBackend
+
+    mock_run.return_value = MagicMock(
+        returncode=0,
+        stdout=json.dumps({
+            "type": "result",
+            "subtype": "success",
+            "is_error": False,
+            "result": "ok",
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+            "total_cost_usd": 0.0,
+        }),
+        stderr="",
+    )
+    memory = MemorySystem(db_path=str(tmp_path / "m.db"))
+    client = ClaudeClient(backend=FallbackBackend([ClaudeCodeBackend()]), memory=memory)
+    client.chat("implemente um modulo", task_type=TaskType.CODE)
+
+    cmd = mock_run.call_args[0][0]
+    assert cmd[cmd.index("--model") + 1] == "opus"

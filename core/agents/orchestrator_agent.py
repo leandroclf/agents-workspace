@@ -99,7 +99,14 @@ Quando solicitado a decompor, responda em JSON:
     def _execute_subtask(self, subtask: SubTask, context: str = "") -> dict:
         agent_class = AGENT_MAP.get(subtask.agent_type, ExecutorAgent)
         agent = agent_class(memory=self.memory, skill_manager=self.skill_manager)
-        result = agent.run(args=[subtask.description])
+        task_text = subtask.description
+        if context:
+            task_text = f"{subtask.description}\n\nContexto das dependências:\n{context}"
+
+        if subtask.agent_type in {"proposal", "lead-report"}:
+            result = agent.run(args=[task_text])
+        else:
+            result = agent.run(task=task_text)
         # Normalise: some agents return str, others return dict
         if isinstance(result, str):
             return {"text": result, "agent": subtask.agent_type,
