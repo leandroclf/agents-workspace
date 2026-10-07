@@ -1,6 +1,6 @@
 # Agents Workspace
 
-> **Portfolio status (2026-10-06): legacy/reference.** New orchestration work belongs in [ai-engineering-team](https://github.com/leandroclf/ai-engineering-team). Preserve this repository for comparison and migration evidence; do not extend its agent runtime unless a measured workload demonstrates a capability missing from the canonical runtime.
+> **Portfolio status (2026-10-06): legacy/reference.** New orchestration work belongs in [product-platform-engineering-team](https://github.com/leandroclf/product-platform-engineering-team). Preserve this repository for comparison and migration evidence; do not extend its agent runtime unless a measured workload demonstrates a capability missing from the canonical runtime.
 
 > **Base reutilizável para novos projetos com agentes** — sistema multi-agente com backend abstrato, memória persistente, servidores MCP, REST API, CLI e workflows declarativos.
 
